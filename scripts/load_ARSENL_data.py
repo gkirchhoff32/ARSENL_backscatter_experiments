@@ -19,7 +19,7 @@ import pandas as pd
 import time
 import pickle
 
-def load_INPHAMIS_data(fname, picklename, create_csv):
+def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
     """
     Loads data from INPHAMIS lidar acquisition system into DataFrame object and stores it as a serialized pickle
     object for fast data loading.
@@ -29,12 +29,12 @@ def load_INPHAMIS_data(fname, picklename, create_csv):
     """
 
     start = time.time()
-    df = pd.read_csv(fname, delimiter=',')
+    df = pd.read_csv(data_dir + fname, delimiter=',')
     print('Elapsed time (read pd): {} sec'.format(time.time()-start))
 
     if create_csv:
         start = time.time()
-        df.to_csv('{}{}'.format(fname, '.csv'), index=None)
+        df.to_csv('{}{}'.format(data_dir + fname, '.csv'), index=None)
         print('Elapsed time (create csv): {} sec'.format(time.time()-start))
 
     outfile = open('{}/{}'.format(data_dir, picklename), 'wb')

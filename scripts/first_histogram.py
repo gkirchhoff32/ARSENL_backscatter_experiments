@@ -25,18 +25,18 @@ c = 299792458  # [m/s] Speed of light
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
 data_dir = cwd + r'/../Data'
-fname1 = data_dir + r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
+fname1 = r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
 picklename1 = 'pickle'
 
 # Parameters
 create_csv = 0  # Set true to generate a .csv from .ARSENL data
-load_data = 0  # Set true to load data into a DataFrame and serialize into a pickle object
+load_data = 1  # Set true to load data into a DataFrame and serialize into a pickle object
 irregular_data = 1  # Set true if data has gaps (i.e., dtime is 0 for many clock cycles)
 exclude = [20000, 40000]  # Set boundaries for binning
 
 # Load INPHAMIS .ARSENL data if not yet serialized
 if load_data:
-    load_INPHAMIS_data(fname1, picklename1, create_csv)
+    load_INPHAMIS_data(data_dir, fname1, picklename1, create_csv)
 
 # Unpickle the data to DataFrame object
 infile = open('{}/{}'.format(data_dir, picklename1), 'rb')
