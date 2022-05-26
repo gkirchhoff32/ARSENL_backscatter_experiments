@@ -7,39 +7,34 @@
 # University of Colorado Boulder
 #
 """
-Histogram data from ARSENL INPHAMIS lidar.
+Histogram photon arrival time data from ARSENL INPHAMIS lidar. IMPORTANT: Set data path settings in
+'load_ARSENL_data.py' first.
 """
 
 import numpy as np
-import os
 import pandas as pd
 import time
 import pickle
 import matplotlib.pyplot as plt
-from load_ARSENL_data import load_INPHAMIS_data
 
+from load_ARSENL_data import load_INPHAMIS_data, data_dir, fname, picklename
+
+start = time.time()
 # Constants
 c = 299792458  # [m/s] Speed of light
 
-# Path settings
-# TODO: Put this in yaml config file
-cwd = os.getcwd()
-data_dir = cwd + r'/../Data'
-fname1 = r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
-picklename1 = 'pickle'
-
 # Parameters
 create_csv = 0  # Set true to generate a .csv from .ARSENL data
-load_data = 1  # Set true to load data into a DataFrame and serialize into a pickle object
+load_data = True  # Set true to load data into a DataFrame and serialize into a pickle object
 irregular_data = 1  # Set true if data has gaps (i.e., dtime is 0 for many clock cycles)
 exclude = [20000, 40000]  # Set boundaries for binning
 
 # Load INPHAMIS .ARSENL data if not yet serialized
 if load_data:
-    load_INPHAMIS_data(data_dir, fname1, picklename1, create_csv)
+    load_INPHAMIS_data(data_dir, fname, picklename, create_csv)
 
 # Unpickle the data to DataFrame object
-infile = open('{}/{}'.format(data_dir, picklename1), 'rb')
+infile = open('{}/{}'.format(data_dir, picklename), 'rb')
 df = pickle.load(infile)
 infile.close()
 
@@ -70,12 +65,11 @@ distance = flight_time / 1e12 * c / 2
 # plt.show()
 
 ### Histogram of time of flight ###
-# start = time.time()
 fig = plt.figure()
 ax1 = fig.add_subplot(211)
 ax2 = fig.add_subplot(212)
 n1, bins1, patches1 = ax1.hist(flight_time, bins=200)
-# print('Histogram plot time elapsed: {:.3} sec:'.format(time.time() - start))
+print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
 n2, bins2, patches2 = ax2.hist(distance, bins=200)
 ax1.set_xlabel('Time of flight [ps]')
 ax1.set_title('Time of flight for INPHAMIS backscatter')
@@ -83,3 +77,4 @@ ax2.set_xlabel('Range [m]')
 ax2.set_title('Detected range for INPHAMIS backscatter')
 plt.tight_layout()
 plt.show()
+

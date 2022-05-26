@@ -19,6 +19,14 @@ import pandas as pd
 import time
 import pickle
 
+# Path settings
+# TODO: Put this in yaml config file
+cwd = os.getcwd()
+data_dir = cwd + r'/../Data'
+fname = r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
+picklename = 'pickle.dat'
+create_csv = 0
+
 def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
     """
     Loads data from INPHAMIS lidar acquisition system into DataFrame object and stores it as a serialized pickle
@@ -40,4 +48,9 @@ def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
     outfile = open('{}/{}'.format(data_dir, picklename), 'wb')
     pickle.dump(df, outfile)
     outfile.close()
+
+    return df
+
+if __name__ == "__main__":
+    load_INPHAMIS_data(data_dir, fname, picklename, create_csv)
 
