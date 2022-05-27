@@ -16,6 +16,12 @@ import pandas as pd
 import time
 import pickle
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
+=======
+
+start = time.time()
+from load_ARSENL_data import load_INPHAMIS_data
+>>>>>>> 18b40ee7040e52a9cbfbdc142b863296c5ce6b9b
 
 from load_ARSENL_data import load_INPHAMIS_data, data_dir, fname, picklename
 
@@ -25,7 +31,11 @@ c = 299792458  # [m/s] Speed of light
 
 # Parameters
 create_csv = 0  # Set true to generate a .csv from .ARSENL data
+<<<<<<< HEAD
 load_data = True  # Set true to load data into a DataFrame and serialize into a pickle object
+=======
+load_data = 0  # Set true to load data into a DataFrame and serialize into a pickle object
+>>>>>>> 18b40ee7040e52a9cbfbdc142b863296c5ce6b9b
 irregular_data = 1  # Set true if data has gaps (i.e., dtime is 0 for many clock cycles)
 exclude = [20000, 40000]  # Set boundaries for binning
 
@@ -69,7 +79,11 @@ fig = plt.figure()
 ax1 = fig.add_subplot(211)
 ax2 = fig.add_subplot(212)
 n1, bins1, patches1 = ax1.hist(flight_time, bins=200)
+<<<<<<< HEAD
 print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
+=======
+print('Histogram plot time elapsed: {:.3} sec:'.format(time.time() - start))
+>>>>>>> 18b40ee7040e52a9cbfbdc142b863296c5ce6b9b
 n2, bins2, patches2 = ax2.hist(distance, bins=200)
 ax1.set_xlabel('Time of flight [ps]')
 ax1.set_title('Time of flight for INPHAMIS backscatter')
