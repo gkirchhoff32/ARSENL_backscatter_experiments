@@ -19,19 +19,16 @@ import pandas as pd
 import time
 import pickle
 
-<<<<<<< HEAD
 # Path settings
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
 data_dir = cwd + r'/../Data'
 fname = r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
 picklename = 'pickle.dat'
-=======
 cwd = os.getcwd()
 data_dir = cwd + r'/../Data'
 fname = r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
 picklename = 'pickle'
->>>>>>> 18b40ee7040e52a9cbfbdc142b863296c5ce6b9b
 create_csv = 0
 
 def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
