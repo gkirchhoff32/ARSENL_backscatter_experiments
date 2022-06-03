@@ -25,10 +25,6 @@ cwd = os.getcwd()
 data_dir = cwd + r'/../Data'
 fname = r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
 picklename = 'pickle.dat'
-cwd = os.getcwd()
-data_dir = cwd + r'/../Data'
-fname = r'/Dev_0_-_2022-02-18_10.48.52.ARSENL'
-picklename = 'pickle'
 create_csv = 0
 
 def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
