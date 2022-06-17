@@ -22,8 +22,8 @@ import pickle
 # Path settings
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
-data_dir = cwd + r'/../Data/Deadtime_Experiments_Different_OD\OD1.0'
-fname = r'/Dev_0_-_2022-04-15_11.10.35.ARSENL'
+data_dir = cwd + r'/../Data/Deadtime_Experiments_Different_OD\OD0.5'
+fname = r'/Dev_0_-_2022-04-15_11.02.33.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
