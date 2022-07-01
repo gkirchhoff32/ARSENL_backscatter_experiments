@@ -3,7 +3,8 @@
 # load_ARSENL_data.py
 #
 # Grant Kirchhoff
-# 02-25-2022
+# Rev. 1: 02-25-2022 Initial loading from raw data
+# Rev. 2: 06-24-2022 Loading from netcdf format
 # University of Colorado Boulder
 #
 """
@@ -15,15 +16,17 @@ and enables flexibility with the data handling.
 """
 
 import os
+import numpy as np
 import pandas as pd
+import xarray as xr
 import time
 import pickle
 
 # Path settings
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
-data_dir = cwd + r'/../Data/Deadtime_Experiments_Different_OD\OD0.5'
-fname = r'/Dev_0_-_2022-04-15_11.02.33.ARSENL'
+data_dir = cwd + r'/../Data/Deadtime_Experiments_Different_OD\OD1.0'
+fname = r'/Dev_0_-_2022-04-15_11.10.35.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
@@ -51,6 +54,19 @@ def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
 
     return df
 
+def load_xarray_dataset(data_dir, fname):
+    dataset = xr.open_dataset(data_dir + fname)
+
+
+
 if __name__ == "__main__":
-    load_INPHAMIS_data(data_dir, fname, picklename, create_csv)
+    # load_INPHAMIS_data(data_dir, fname, picklename, create_csv)
+    cwd = os.getcwd()
+    data_loc = cwd + r'/../Data/Deadtime_Experiments_HiFi/Dev_0_-_2022-04-15_10.49.58.ARSENL.OD00.ARSENL.nc'
+
+    dataset = xr.open_dataset(data_loc)
+
+    print(dataset)
+
+
 
