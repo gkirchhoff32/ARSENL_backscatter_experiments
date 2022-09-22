@@ -11,6 +11,9 @@ class Fit_Pulse(torch.nn.Module):
     def __init__(self, M, t_min, t_max):
         """
         Instantiate and initialize the fit parameters.
+        :param M: (int) Polynomial order
+        :param t_min: (float) Lower bound for fit window [s]
+        :param t_max: (float) Upper bound for fit window [s]
         """
         super().__init__()
         self.M = M  # Polynomial order
@@ -31,6 +34,14 @@ class Fit_Pulse(torch.nn.Module):
         return riem_intgrl
 
     def tstamp_condition(self, t, t_min, t_max):
+        """
+        Transform time tag array into chebyshev polynomial matrix form.
+        :param t: (torch.tensor) Time tag array [s]
+        :param t_min: (float) Lower bound for fit window [s]
+        :param t_max: (float) Upper bound for fit window [s]
+        :return:
+        t_poly_cheb: (torch.tensor) Chebyshev polynomial matrix of time tags
+        """
         t_norm = (t - t_min) / (t_max - t_min)  # Normalize timestamps along [0,1]
         t_poly_cheb = cheby_poly(t_norm, self.M)  # Generate chebyshev timestamp basis
         return t_poly_cheb
