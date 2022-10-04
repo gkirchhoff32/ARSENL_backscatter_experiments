@@ -63,10 +63,9 @@ class Fit_Pulse(torch.nn.Module):
 
         # orthonormalize by leveraging chebyshev polynomials, then calculate forward model
         if not cheby:
-            t_norm = (t - self.t_min) / (self.t_max - self.t_min)  # Normalize timestamps along [0,1]
-            t_poly_cheb = cheby_poly(t_norm, self.M)  # Generate chebyshev timestamp basis
+            t_poly_cheb = self.tstamp_condition(t, self.t_min, self.t_max)
         else:
-            t_poly_cheb = t
+            t_poly_cheb = t * 1
         poly = t_poly_cheb @ self.C
         model_out = torch.exp(poly)  # Forward model
 
@@ -84,7 +83,7 @@ class Fit_Pulse(torch.nn.Module):
         return model_out, integral_out
 
 
-def pois_loss(prof,integral):
+def pois_loss(prof, integral):
     """
     Non-homogenous Poisson point process loss function
     """
