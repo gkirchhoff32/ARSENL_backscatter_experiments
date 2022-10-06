@@ -6,16 +6,18 @@
 
 import numpy as np
 import xarray as xr
+import sys
 
-def data_organize(dt, data_dir, fname, window_bnd, max_lsr_shot, exclude_shots=True):
+def data_organize(dt, data_dir, fname, window_bnd, max_num, set_max_det=False, exclude_shots=True):
     '''
     Some bookkeeping. Organizes data into structures and variables required for the fit routine.
     :param dt: (float) Temporal resolution [s]
     :param data_dir: (str) Data directory
     :param fname: (str) Data file name
     :param window_bnd: (2x1 list) Two time bounds to exclude outlying data [s]
-    :param max_lsr_shot: (int) Number of maximum laser shots to include going forward (see "exclude_shots")
-    :param exclude_shots: (bool) Set True if you want to exclude shots beyond the "max_lsr_shot" parameter
+    :param set_max_det: (bool) Choose whether to set the maximum limiter as number of laser shots (0) or number of detection events (1)
+    :param max_num: (int) Number of maximum laser shots to include going forward (see "exclude_shots")
+    :param exclude_shots: (bool) Set True if you want to exclude shots beyond the "max_num" parameter
     :return:
     flight_time: (N_{tags}x1 xarray.DataArray) Time tags [s]
     n_shots: (int) Number of laser shots
@@ -34,20 +36,25 @@ def data_organize(dt, data_dir, fname, window_bnd, max_lsr_shot, exclude_shots=T
     ttag_sync_idx = ds.time_tag_sync_index.values
 
     if exclude_shots:
-        excl_sync = ds.sync_index[max_lsr_shot].item()
-        excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
-        if excl_ttag_idx.size == 0:
-            nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - tot_lsr_shots[
-                0]  # Subtract first index value to start at 0
-            print(
-                "Last sync event doesn't correspond to a detection event. Please choose another. Please change 'max_lsr_shot' variable. Here is the closest sync-detection index: {}".format(
-                    nearest))
-            sys.exit()
-        else:
-            excl_ttag_idx = excl_ttag_idx[0]
+        if not set_max_det:
+            excl_sync = ds.sync_index[max_num].item()
+            excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
+            if excl_ttag_idx.size == 0:
+                nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - tot_lsr_shots[0]  # Subtract first index value to start at 0
+                print(
+                    "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
+                        nearest))
+                excl_sync = ds.sync_index[nearest].item()
+                excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0][0]
+                tot_lsr_shots = tot_lsr_shots[0:nearest]
+            else:
+                excl_ttag_idx = excl_ttag_idx[0]
+                tot_lsr_shots = tot_lsr_shots[0:max_num]
 
-        flight_time = flight_time[0:excl_ttag_idx]
-        tot_lsr_shots = tot_lsr_shots[0:max_lsr_shot]
+            flight_time = flight_time[0:excl_ttag_idx]
+        else:
+            flight_time = flight_time[0:max_num]
+            tot_lsr_shots = ds.sync_index - ds.sync_index[0].item()  # Normalize sync counter to start @ 0 (instead of whatever preset value it begins with)
         n_shots = len(tot_lsr_shots)
     else:
         n_shots = len(ds.sync_index)
