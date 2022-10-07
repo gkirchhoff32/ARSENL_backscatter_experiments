@@ -174,3 +174,49 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
 
     return torch.tensor(active_ratio_hst)
 
+
+
+
+
+
+
+
+### Graveyard ###
+
+# def loss_lse(f1, f2):
+#     # LSE for 'C_optimize'
+#     return 0.5*(f1 - f2)**2
+
+# def C_optimize(loss1, loss_fn, ratio_step=0.99999, max_epochs=1000):
+#     """
+#     Calculate optimal scaling constant for arrival rate to calculate costs between two datasets with mismatching laser shots. For example, sets w/ different OD values are not comparable in the MLE loss function. There is a scaling that needs to happen to compare the two.
+#     Parameters:
+#     t_min: Window lower bound \\ float
+#     t_max: Window upper bound \\ float
+#     intgrl_N (int): Number of bins in integral \\ int
+#     deadtime: Deadtime interval [sec] \\ float
+#     t_det_lst (list): Nested list of arrays, where each array contains the detections per laser shot
+#     Returns:
+#     active_ratio_hst (torch array): Histogram of deadtime-adjustment ratios for each time bin.
+#     """
+#     epoch = 0
+#     alpha = 0.00000000001
+#     C = 1
+#     while ratio_step<=0.99999 and epoch<max_epochs:
+#         n_det_no_dtime = len(pred_no_dtime)
+#         loss2 = loss_fn(C*pred_no_dtime, C*integral_no_dtime*n_shots_no_dtime)
+#         cost = loss_lse(loss1, loss2)
+#         step = -2*(loss1-loss2)*(n_shots_no_dtime*integral_no_dtime - n_det_no_dtime/C)
+#         C = C - alpha*step
+
+#         cost_lst.append(cost.item())
+#         C_lst.append(C.item())
+
+#         if epoch!=0:
+#             ratio_step = C_lst[-1]/C_lst[-2]
+
+#         epoch += 1
+
+#     return C
+
+
