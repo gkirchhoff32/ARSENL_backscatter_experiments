@@ -174,6 +174,43 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
 
     return torch.tensor(active_ratio_hst)
 
+def generate_fit_val_eval(data, data_ref, n_shots, n_shots_ref):
+    """
+    Generates fit, validation, and evaluation data sets for the fitting routine. Recall (1) Fit set: Dataset used to
+    generate the fit; (2) Validation set: Independent dataset used to calculate validation loss; and (3) Evaluation set:
+    High fidelity set (e.g., unaffected by deadtime, high OD setting) that is used to calculate evaluation loss.
+    :param data: (Nx1) Data used for calculating fit and validation loss
+    :param data_ref: (Mx1) Reference data used for calculating evaluation loss
+    :param n_shots: (int) Number of laser shots for "data"
+    :param n_shots_ref: (int) Number of laser shots for "data_ref"
+    :return: t_phot_fit_tnsr: (N/2 x 1) Fit set (torch tensor)
+    :return: t_phot_val_tnsr: (N/2 x 1) Validation set (torch tensor)
+    :return: t_phot_eval_tnsr: (Mx1) Evaluation set (torch tensor)
+    :return: n_shots_fit: Number of laser shots for fit set
+    :return: n_shots_val: Number of laser shots for validation set
+    :return: n_shots_eval: Number of laser shots for evaluation set
+    """
+
+    # The target is assumed to be stationary, so I can split the data into halves
+    split_value = int(len(data) // 2)
+    t_phot_fit = data[:split_value]
+    t_phot_val = data[split_value:]
+    t_phot_eval = data_ref[:]
+
+    # Adjust number of laser shots corresponding to fit and val sets
+    ratio_fit_split = len(t_phot_fit) / len(data)
+    ratio_val_split = len(t_phot_val) / len(data_ref)
+    n_shots_fit = np.floor(n_shots * ratio_fit_split).astype(int)
+    n_shots_val = np.floor(n_shots * ratio_val_split).astype(int)
+    n_shots_eval = n_shots_ref
+
+    t_phot_fit_tnsr = torch.tensor(t_phot_fit.to_numpy())
+    t_phot_val_tnsr = torch.tensor(t_phot_val.to_numpy())
+    t_phot_eval_tnsr = torch.tensor(t_phot_eval.to_numpy())
+
+    return t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, n_shots_fit, n_shots_val, n_shots_eval
+
+
 
 
 

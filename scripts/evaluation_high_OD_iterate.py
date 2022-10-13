@@ -1,3 +1,12 @@
+# validation_high_OD_iterate.py
+#
+# Grant Kirchhoff
+# Last Updated: 10/13/2022
+"""
+Automation script to loop through different OD datasets and evaluate fit performance against an evaluation dataset
+(i.e., high OD setting).
+"""
+
 import numpy as np
 import pandas as pd
 import time
@@ -30,7 +39,7 @@ exclude_shots = True                     # Set TRUE to exclude data to work with
 max_num = 10                   # Include up to certain number of laser shots
 deadtime = 25e-9                  # [s] Acquisition deadtime
 
-load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Deadtime_Experiments_HiFi'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Deadtime_Experiments_HiFi'
 files = os.listdir(load_dir)
 
 OD_list = np.zeros(len(files))
@@ -44,6 +53,19 @@ print('\n{}:'.format(fname_ref[1:5]))
 print('Number of detections: {}'.format(len(flight_time_ref)))
 print('Number of laser shots: {}'.format(n_shots_ref))
 
+# Optimization parameters
+rel_step_lim = 1e-8  # termination criteria based on step size
+max_epochs = 400  # maximum number of iterations/epochs
+learning_rate = 1e-1  # ADAM learning rate
+term_persist = 20  # relative step size averaging interval in iterations
+intgrl_N = 10000  # Set number of steps in numerical integration
+
+# I define the max/min times as fixed values. They are the upper/lower bounds of the fit.
+# Time vector per shot
+t_min = window_bnd[0] 
+t_max = window_bnd[1]
+dt = dt
+t_fine = np.arange(t_min, t_max, dt)
 for i in range(3):
     print(OD_list[i])
     fname = r'/' + files[i]
@@ -51,3 +73,14 @@ for i in range(3):
     print('\n{}:'.format(fname_ref[1:5]))
     print('Number of detections: {}'.format(len(flight_time)))
     print('Number of laser shots: {}'.format(n_shots))
+
+    t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,\
+    n_shots_fit, n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, n_shots, n_shots_ref)
+
+    print('Fit n shots: {}'.format(n_shots_fit))
+    print('Fit data: {}'.format(t_phot_fit_tnsr))
+
+
+
+
+
