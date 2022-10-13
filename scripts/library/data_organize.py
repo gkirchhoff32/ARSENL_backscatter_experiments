@@ -36,25 +36,21 @@ def data_organize(dt, data_dir, fname, window_bnd, max_num, set_max_det=False, e
     ttag_sync_idx = ds.time_tag_sync_index.values
 
     if exclude_shots:
-        if not set_max_det:
-            excl_sync = ds.sync_index[max_num].item()
-            excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
-            if excl_ttag_idx.size == 0:
-                nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - tot_lsr_shots[0]  # Subtract first index value to start at 0
-                print(
-                    "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
-                        nearest))
-                excl_sync = ds.sync_index[nearest].item()
-                excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0][0]
-                tot_lsr_shots = tot_lsr_shots[0:nearest]
-            else:
-                excl_ttag_idx = excl_ttag_idx[0]
-                tot_lsr_shots = tot_lsr_shots[0:max_num]
-
-            flight_time = flight_time[0:excl_ttag_idx]
+        excl_sync = ds.sync_index[max_num].item()
+        excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
+        if excl_ttag_idx.size == 0:
+            nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - tot_lsr_shots[0]  # Subtract first index value to start at 0
+            print(
+                "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
+                    nearest))
+            excl_sync = ds.sync_index[nearest].item()
+            excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0][0]
+            tot_lsr_shots = tot_lsr_shots[0:nearest]
         else:
-            flight_time = flight_time[0:max_num]
-            tot_lsr_shots = ds.sync_index - ds.sync_index[0].item()  # Normalize sync counter to start @ 0 (instead of whatever preset value it begins with)
+            excl_ttag_idx = excl_ttag_idx[0]
+            tot_lsr_shots = tot_lsr_shots[0:max_num]
+
+        flight_time = flight_time[0:excl_ttag_idx]
         n_shots = len(tot_lsr_shots)
     else:
         n_shots = len(ds.sync_index)
