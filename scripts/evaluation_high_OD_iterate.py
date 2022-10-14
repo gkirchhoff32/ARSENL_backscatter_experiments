@@ -11,7 +11,6 @@ TODO: Make a guide that describes the parameter functions.
 """
 
 import numpy as np
-import time
 import matplotlib.pyplot as plt
 import torch
 import os
@@ -102,8 +101,6 @@ if run_full:
             ZeroDivisionError
             print('ERROR: Insufficient laser shots... increase the "max_num" parameter.')
             exit()
-        # print('Fit n shots: {}'.format(n_shots_fit))
-        # print('Fit data: {}'.format(t_phot_fit_tnsr))
 
         # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
         active_ratio_hst = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst)
@@ -117,6 +114,7 @@ if run_full:
             M_lst = M_lst
             M_max = max(M_lst)
 
+        # Run fit optimizer
         ax, val_loss_arr, eval_loss_arr, \
             fit_rate_fine, coeffs = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
                                                     t_phot_eval_tnsr, active_ratio_hst,
@@ -172,138 +170,7 @@ if run_full:
 
     plt.show()
 
-    #     iter_len = len(M_lst)
-    #     val_loss_arr = np.zeros(M_max + 1)
-    #     eval_loss_arr = np.zeros(M_max + 1)
-    #     coeffs = np.zeros((M_max + 1, M_max + 1))
-    #     fit_rate_fine = np.zeros((M_max + 1, len(t_fine)))
-    #     print('Time elapsed:\n')
-    #
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111)
-    #     # Iterate through increasing polynomial complexity.
-    #     # Compare fit w/ validation set and use minimum loss find optimal polynomial order.
-    #     for i in range(len(M_lst)):
-    #         # initialize for fit loop
-    #         M = M_lst[i]  # Polynomial order  (e.g., x^2 --> M=2)
-    #         fit_model = fit.Fit_Pulse(M, t_min, t_max)
-    #         optimizer = torch.optim.Adam(fit_model.parameters(), lr=learning_rate)
-    #         epoch = 0
-    #         rel_step = 1e3 * rel_step_lim
-    #         fit_loss_lst = []
-    #         val_loss_lst = []
-    #         rel_step_lst = []
-    #
-    #         init_C = np.zeros(M + 1)
-    #         for j in range(M + 1):
-    #             init_C[j] = fit_model.C[j].item()
-    #
-    #         # set the loss function to use a Poisson point process likelihood function
-    #         loss_fn = fit.pois_loss
-    #
-    #         # perform fit
-    #         start = time.time()
-    #         t_fit_norm = fit_model.tstamp_condition(t_phot_fit_tnsr, t_min, t_max)
-    #         t_val_norm = fit_model.tstamp_condition(t_phot_val_tnsr, t_min, t_max)
-    #         t_eval_norm = fit_model.tstamp_condition(t_phot_eval_tnsr, t_min, t_max)
-    #         t_intgrl = fit.cheby_poly(torch.linspace(0, 1, intgrl_N), M)
-    #         while rel_step > rel_step_lim and epoch < max_epochs:
-    #             fit_model.train()
-    #             pred_fit, integral_fit = fit_model(intgrl_N, active_ratio_hst, t_fit_norm, t_intgrl, cheby=True)
-    #             loss_fit = loss_fn(pred_fit, integral_fit * n_shots_fit)  # add regularization here
-    #             fit_loss_lst += [loss_fit.item()]
-    #
-    #             # calculate relative step as an average over the last term_persist iterations
-    #             if epoch == 0:
-    #                 rel_step_lst += [1e3 * rel_step_lim]
-    #                 rel_step = 1e3 * rel_step_lim
-    #             else:
-    #                 rel_step_lst += [(fit_loss_lst[-2] - fit_loss_lst[-1]) / np.abs(fit_loss_lst[-2])]
-    #                 rel_step = np.abs(np.array(rel_step_lst)[-term_persist:].mean())
-    #
-    #             # update estimated parameters
-    #             loss_fit.backward()
-    #             optimizer.step()
-    #
-    #             # zero out the gradient for the next step
-    #             optimizer.zero_grad()
-    #
-    #             epoch += 1
-    #
-    #         pred_mod_seg, __ = fit_model(intgrl_N, active_ratio_hst, torch.tensor(t_fine), t_intgrl, cheby=False)
-    #         fit_rate_fine[M, :] = pred_mod_seg.detach().numpy().T
-    #         coeffs[M, 0:M + 1] = fit_model.C.detach().numpy().T
-    #
-    #         # Calculate validation loss
-    #         # Using fit generated from fit set, calculate loss when applied to validation set
-    #         pred_val, integral_val = fit_model(intgrl_N, active_ratio_hst, t_val_norm, t_intgrl, cheby=True)
-    #         loss_val = loss_fn(pred_val, integral_val * n_shots_fit)
-    #         val_loss_arr[M] = loss_val
-    #
-    #         # Now use the generated fit and validate against evaluation set (e.g., no deadtime, high-OD data)
-    #         pred_eval, integral_eval = fit_model(intgrl_N, active_ratio_hst_ref, t_eval_norm, t_intgrl, cheby=True)
-    #
-    #         # If the number of shots between evaluation set and validation set differ, then arrival rate needs to be scaled accordingly.
-    #         n_det_eval = len(pred_eval)
-    #         C_scale = n_det_eval / n_shots_eval / integral_eval
-    #         loss_eval = loss_fn(C_scale * pred_eval, C_scale * integral_eval * n_shots_eval)
-    #         eval_loss_arr[M] = loss_eval
-    #
-    #         end = time.time()
-    #         print('Order={}: {:.2f} sec'.format(M, end - start))
-    #
-    #         ax.plot(fit_loss_lst, label='Order {}'.format(M))
-    #
-    #     ax.set_ylabel('Loss')
-    #     ax.set_xlabel('Iterations')
-    #     ax.set_title('OD{}'.format(OD_list[k]))
-    #     plt.suptitle('Fit loss')
-    #     plt.tight_layout()
-    #     ax.legend()
-    #
-    #     print('\nValidation loss for')
-    #     for i in range(len(M_lst)):
-    #         print('Order {}: {:.5f}'.format(M_lst[i], val_loss_arr[M_lst[i]]))
-    #
-    #     print('\nEvaluation loss for')
-    #     for i in range(len(M_lst)):
-    #         print('Order {}: {:.5f}'.format(M_lst[i], eval_loss_arr[M_lst[i]]))
-    #
-    #     minx, miny = np.argmin(val_loss_arr), min(val_loss_arr)
-    #
-    #     # Choose order to investigate
-    #     order = minx
-    #     try:
-    #         model = coeffs[order, 0:order + 1]
-    #         for i in range(order + 1):
-    #             print('Final C{}: {:.4f}'.format(i, model[i]))
-    #     except:
-    #         print("\nERROR: Order exceeds maximum complexity iteration value.\n")
-    #
-    #     # Overlay fit & histogram
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111)
-    #
-    #     n, bins = np.histogram(flight_time, bins=34)
-    #     binwidth = np.diff(bins)[0]
-    #     N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
-    #     center = 0.5 * (bins[:-1] + bins[1:])
-    #     ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5)
-    #
-    #     # Arrival rate fit
-    #     t_fine = np.arange(t_min, t_max, dt)
-    #     fit_rate_seg = fit_rate_fine[order, :]
-    #     ax.plot(t_fine, fit_rate_seg, 'r--')
-    #     plt.suptitle('Arrival Rate Fit')
-    #     ax.set_title('OD{}'.format(OD_list[k]))
-    #     ax.set_xlabel('time [s]')
-    #     ax.set_ylabel('Photon Arrival Rate [Hz]')
-    #     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    #     ax.text(0.1, 0.90, 'Polynomial order: {}'.format(order), transform=ax.transAxes, fontsize=14,
-    #             verticalalignment='top', bbox=props)
-    #     plt.tight_layout()
-    #
-    # plt.show()
+
 
 
 
