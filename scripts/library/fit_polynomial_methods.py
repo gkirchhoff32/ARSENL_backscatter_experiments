@@ -19,14 +19,14 @@ class Fit_Pulse(torch.nn.Module):
         """
         super().__init__()
         self.M = M  # Polynomial order
-        self.C = torch.nn.Parameter(-1 * torch.ones(M + 1, 1, dtype=float))  # Coefficients to be optimized
+        self.C = torch.nn.Parameter(-1 * torch.ones(M+1, 1, dtype=float))  # Coefficients to be optimized
         self.t_max = t_max  # Fit upper bound
         self.t_min = t_min  # Fit lower bound
 
     # Helpers for numerical integration (Riemann and trapezoidal method)
     @staticmethod
     def trapezoid(vals, dx):
-        trap_intgrl = 2 * torch.sum(vals) - vals[0] - vals[-1]
+        trap_intgrl = 2*torch.sum(vals) - vals[0] - vals[-1]
         trap_intgrl *= dx / 2
         return trap_intgrl
 
@@ -74,13 +74,14 @@ class Fit_Pulse(torch.nn.Module):
         # calculate the integral
         t_poly_cheb = t_intgrl
         poly = t_poly_cheb @ self.C
-        eval_model = torch.exp(poly)
+        fine_res_model = torch.exp(poly)
 
-        dt = (self.t_max - self.t_min) / intgrl_N  # Step size
-        assert (len(eval_model) == len(active_ratio_hst))
-        active_ratio_hst.resize_(eval_model.size())
-        eval_model = eval_model * active_ratio_hst  # Generate deadtime noise model
-        integral_out = self.trapezoid(eval_model, dt)  # Numerically integrate
+        # dt = (self.t_max - self.t_min) / intgrl_N  # Step size
+        _, dt = np.linspace(self.t_min, self.t_max, intgrl_N, endpoint=False, retstep=True)
+        assert (len(fine_res_model) == len(active_ratio_hst))
+        active_ratio_hst.resize_(fine_res_model.size())
+        fine_res_model = fine_res_model * active_ratio_hst  # Generate deadtime noise model
+        integral_out = self.trapezoid(fine_res_model, dt)  # Numerically integrate
 
         return model_out, integral_out
 
@@ -115,7 +116,7 @@ def cheby_poly(x, M):
             return 2 * x * cheby(x, m - 1) - cheby(x, m - 2)
 
     N = len(x)
-    model_out = torch.zeros((N, M + 1), dtype=float)
+    model_out = torch.zeros((N, M+1), dtype=float)
     for i in range(M + 1):
         model_out[:, i] = cheby(x, i)
 
@@ -144,18 +145,18 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
 
     # Initialize
     bin_edges, dt = np.linspace(t_min, t_max, intgrl_N + 1, endpoint=False, retstep=True)
-    active_ratio_hst = np.zeros(len(bin_edges) - 1)
+    active_ratio_hst = np.zeros(len(bin_edges)-1)
     deadtime_n_bins = np.floor(deadtime / dt).astype(int)  # Number of bins that deadtime occupies
 
     # Iterate through each shot. For each detection event, reduce the number of active bins according to deadtime length.
     for shot_num in range(len(t_det_lst)):
         active_ratio_hst += 1
-        total_det = t_det_lst[shot_num]
+        detections = t_det_lst[shot_num]
 
-        if total_det.size == 0:
+        if detections.size == 0:
             continue  # If no detection event for this shot, then skip
         else:
-            for det in total_det:
+            for det in detections:
                 det_time = det.item()  # Time tag of detection that occurred during laser shot
 
                 # Only include detections that fall within fitting window
@@ -163,14 +164,14 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
                     det_bin_idx = np.argmin(abs(det_time - bin_edges))  # Bin that detection falls into
                     final_dead_bin = det_bin_idx + deadtime_n_bins  # Final bin index that deadtime occupies
 
-                    # Currently a crutch that assumes "dead" time >> active time. Will need to include "wrap around" to be more accurate
+                    # Currently a crutch that assumes "dead" time >> window. Will need to include "wrap around" to be more accurate
                     # If final dead bin surpasses fit window, set it to the window upper bin
                     if final_dead_bin > len(active_ratio_hst):
                         final_dead_bin = len(active_ratio_hst)
                     # If initial dead bin (detection bin) precedes fit window, set it to the window lower bin
                     if det_time < t_min:
                         det_bin_idx = 0
-                    active_ratio_hst[det_bin_idx:final_dead_bin + 1] -= 1  # Remove "dead" region in active ratio
+                    active_ratio_hst[det_bin_idx:final_dead_bin+1] -= 1  # Remove "dead" region in active ratio
 
     active_ratio_hst /= len(t_det_lst)  # Normalize for ratio
 
@@ -224,6 +225,7 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
     eval_loss_arr = np.zeros(M_max + 1)
     coeffs = np.zeros((M_max + 1, M_max + 1))
     fit_rate_fine = np.zeros((M_max + 1, len(t_fine)))
+    C_scale_arr = np.zeros(M_max + 1)
     print('Time elapsed:\n')
 
     fig = plt.figure()
@@ -295,13 +297,14 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         C_scale = n_det_eval / n_shots_eval / integral_eval
         loss_eval = loss_fn(C_scale * pred_eval, C_scale * integral_eval * n_shots_eval)
         eval_loss_arr[M] = loss_eval
+        C_scale_arr[M] = C_scale
 
         end = time.time()
         print('Order={}: {:.2f} sec'.format(M, end - start))
 
         ax.plot(fit_loss_lst, label='Order {}'.format(M))
 
-    return ax, val_loss_arr, eval_loss_arr, fit_rate_fine, coeffs
+    return ax, val_loss_arr, eval_loss_arr, fit_rate_fine, coeffs, C_scale_arr
 
 
 

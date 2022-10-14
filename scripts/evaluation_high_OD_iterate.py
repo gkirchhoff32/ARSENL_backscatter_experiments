@@ -34,12 +34,12 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_num_ref = 10000                   # Include up to certain number of laser shots
+max_num_ref = 1000000                   # Include up to certain number of laser shots
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
 
-load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Deadtime_Experiments_HiFi'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Deadtime_Experiments_HiFi'
 files = os.listdir(load_dir)
 
 OD_list = np.zeros(len(files))
@@ -82,6 +82,8 @@ if run_full:
     if not include_deadtime:
         active_ratio_hst_ref = torch.ones(len(active_ratio_hst_ref))
 
+    eval_final_loss_lst = []
+    C_scale_final = []
     stop_idx = int(np.where(OD_list == OD_ref)[0])
     if not use_stop_idx:
         stop_idx = 3
@@ -116,7 +118,7 @@ if run_full:
 
         # Run fit optimizer
         ax, val_loss_arr, eval_loss_arr, \
-            fit_rate_fine, coeffs = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
+            fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
                                                     t_phot_eval_tnsr, active_ratio_hst,
                                                     active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval,
                                                     learning_rate, rel_step_lim, intgrl_N,
@@ -139,13 +141,16 @@ if run_full:
 
         # Choose order to investigate
         minx, miny = np.argmin(val_loss_arr), min(val_loss_arr)
-        order = minx
+        min_order = minx
         try:
-            model = coeffs[order, 0:order + 1]
-            for i in range(order + 1):
+            model = coeffs[min_order, 0:min_order + 1]
+            for i in range(min_order + 1):
                 print('Final C{}: {:.4f}'.format(i, model[i]))
         except:
             print("\nERROR: Order exceeds maximum complexity iteration value.\n")
+
+        eval_final_loss_lst.append(eval_loss_arr[min_order])
+        C_scale_final.append(C_scale_arr[min_order])
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -158,19 +163,27 @@ if run_full:
 
         # Arrival rate fit
         t_fine = np.arange(t_min, t_max, dt)
-        fit_rate_seg = fit_rate_fine[order, :]
+        fit_rate_seg = fit_rate_fine[min_order, :]
         ax.plot(t_fine, fit_rate_seg, 'r--')
         ax.set_title('Arrival Rate Fit')
         ax.set_xlabel('time [s]')
         ax.set_ylabel('Photon Arrival Rate [Hz]')
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.1, 0.90, 'Polynomial order: {}'.format(order), transform=ax.transAxes, fontsize=14,
+        ax.text(0.1, 0.90, 'Polynomial order: {}'.format(min_order), transform=ax.transAxes, fontsize=14,
                 verticalalignment='top', bbox=props)
         plt.tight_layout()
 
+    print('\nScale factor for OD:')
+    for k in range(stop_idx):
+        print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], 0.1**(3.0-OD_list[k])))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(OD_list[:stop_idx], eval_final_loss_lst, 'r.')
+    ax.set_xlabel('OD')
+    ax.set_ylabel('Evaluation loss')
+    ax.set_title('Evaluation Loss vs OD')
     plt.show()
-
-
 
 
 
