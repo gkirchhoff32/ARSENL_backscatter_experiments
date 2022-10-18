@@ -15,6 +15,12 @@ import matplotlib.pyplot as plt
 import torch
 import os
 import sys
+import time
+import xarray as xr
+import pandas as pd
+import csv
+
+start = time.time()
 
 cwd = os.getcwd()
 dirLib = cwd + r'/library'
@@ -24,7 +30,7 @@ if dirLib not in sys.path:
 import fit_polynomial_methods as fit
 import data_organize as dorg
 
-# Adjust parameters here to customize run
+########################################################################################################################
 
 ### CONSTANTS ####
 c = 2.99792458e8                      # [m/s] Speed of light
@@ -34,12 +40,36 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_num_ref = 1000000                   # Include up to certain number of laser shots
+max_num_ref = int(1e6)                   # Include up to certain number of laser shots
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
+include_deadtime = True  # Set True to include deadtime in noise model
+
+# Optimization parameters
+rel_step_lim = 1e-8  # termination criteria based on step size
+max_epochs = 400  # maximum number of iterations/epochs
+learning_rate = 1e-1  # ADAM learning rate
+term_persist = 20  # relative step size averaging interval in iterations
+intgrl_N = 10000  # Set number of steps in numerical integration
+
+# Set iterate to True if you want to iterate through increasing complexity.
+# Otherwise set to False if you want to check a single polynomial order.
+single_step_iter = False
+M_max = 21  # Max polynomial complexity to test if iterating
+M_lst = np.arange(6, 16, 1)
+
+########################################################################################################################
+
+# I define the max/min times as fixed values. They are the upper/lower bounds of the fit.
+# Time vector per shot
+t_min = window_bnd[0]
+t_max = window_bnd[1]
+dt = dt
+t_fine = np.arange(t_min, t_max, dt)
 
 load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Deadtime_Experiments_HiFi'
+save_dir = load_dir + r'/../../Figures/evaluation_loss'
 files = os.listdir(load_dir)
 
 OD_list = np.zeros(len(files))
@@ -53,35 +83,14 @@ print('\n{}:'.format(fname_ref[1:5]))
 print('Number of detections (reference): {}'.format(len(flight_time_ref)))
 print('Number of laser shots (reference): {}'.format(n_shots_ref))
 
+# Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
+active_ratio_hst_ref = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_ref)
+if not include_deadtime:
+    active_ratio_hst_ref = torch.ones(len(active_ratio_hst_ref))
+
+# Fitting routine
 if run_full:
-    # Optimization parameters
-    rel_step_lim = 1e-8  # termination criteria based on step size
-    max_epochs = 400  # maximum number of iterations/epochs
-    learning_rate = 1e-1  # ADAM learning rate
-    term_persist = 20  # relative step size averaging interval in iterations
-    intgrl_N = 10000  # Set number of steps in numerical integration
-
-    # I define the max/min times as fixed values. They are the upper/lower bounds of the fit.
-    # Time vector per shot
-    t_min = window_bnd[0]
-    t_max = window_bnd[1]
-    dt = dt
-    t_fine = np.arange(t_min, t_max, dt)
-
-    # Set iterate to True if you want to iterate through increasing complexity.
-    # Otherwise set to False if you want to check a single polynomial order.
-    single_step_iter = False
-    M_max = 21  # Max polynomial complexity to test if iterating
-    M_lst = np.arange(6, 9, 1)
-
-    # Set True to include deadtime in noise model
-    include_deadtime = True
-
-    # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
-    active_ratio_hst_ref = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_ref)
-    if not include_deadtime:
-        active_ratio_hst_ref = torch.ones(len(active_ratio_hst_ref))
-
+    val_final_loss_lst = []
     eval_final_loss_lst = []
     C_scale_final = []
     stop_idx = int(np.where(OD_list == OD_ref)[0])
@@ -149,6 +158,7 @@ if run_full:
         except:
             print("\nERROR: Order exceeds maximum complexity iteration value.\n")
 
+        val_final_loss_lst.append(val_loss_arr[min_order])
         eval_final_loss_lst.append(eval_loss_arr[min_order])
         C_scale_final.append(C_scale_arr[min_order])
 
@@ -165,7 +175,7 @@ if run_full:
         t_fine = np.arange(t_min, t_max, dt)
         fit_rate_seg = fit_rate_fine[min_order, :]
         ax.plot(t_fine, fit_rate_seg, 'r--')
-        ax.set_title('Arrival Rate Fit')
+        ax.set_title('Arrival Rate Fit: OD{}'.format(OD_list[k]))
         ax.set_xlabel('time [s]')
         ax.set_ylabel('Photon Arrival Rate [Hz]')
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -173,16 +183,29 @@ if run_full:
                 verticalalignment='top', bbox=props)
         plt.tight_layout()
 
+    hypothetical = 0.1**(OD_ref-np.array(OD_list))
     print('\nScale factor for OD:')
     for k in range(stop_idx):
-        print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], 0.1**(3.0-OD_list[k])))
+        print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], hypothetical[k]))
 
+    # Save to csv file
+    save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0], M_lst[-1], max_num_ref)
+    headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor']
+    df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
+                        pd.DataFrame(hypothetical)], axis=1)
+    df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
+
+    print('Total run time: {} seconds'.format(time.time()-start))
+
+    save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.png'.format(include_deadtime, M_lst[0], M_lst[-1], max_num_ref)
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(OD_list[:stop_idx], eval_final_loss_lst, 'r.')
     ax.set_xlabel('OD')
     ax.set_ylabel('Evaluation loss')
     ax.set_title('Evaluation Loss vs OD')
+    fig.savefig(save_dir + save_plt_file)
+    time.sleep(2)
     plt.show()
 
 

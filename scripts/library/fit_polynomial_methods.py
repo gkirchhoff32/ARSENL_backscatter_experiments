@@ -240,7 +240,6 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         epoch = 0
         rel_step = 1e3 * rel_step_lim
         fit_loss_lst = []
-        val_loss_lst = []
         rel_step_lst = []
 
         init_C = np.zeros(M + 1)
@@ -289,7 +288,10 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         loss_val = loss_fn(pred_val, integral_val * n_shots_val)
         val_loss_arr[M] = loss_val
 
-        # Now use the generated fit and validate against evaluation set (e.g., no deadtime, high-OD data)
+        # Now use the generated fit and calculate loss against evaluation set (e.g., no deadtime, high-OD data)
+        # When evaluating, I don't want to use the deadtime model as my evaluation metric. So I will use the Poisson loss function.
+        # To accommodate, I will remove the active_ratio_hst_ref which is what incorporates the deadtime.
+        active_ratio_hst_ref = torch.ones(len(active_ratio_hst_ref))
         pred_eval, integral_eval = fit_model(intgrl_N, active_ratio_hst_ref, t_eval_norm, t_intgrl, cheby=True)
 
         # If the number of shots between evaluation set and validation set differ, then arrival rate needs to be scaled accordingly.
