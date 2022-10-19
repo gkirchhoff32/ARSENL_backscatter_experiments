@@ -6,7 +6,7 @@
 
 import numpy as np
 import xarray as xr
-import sys
+import time
 
 def data_organize(dt, data_dir, fname, window_bnd, max_num, set_max_det=False, exclude_shots=True):
     '''
@@ -32,34 +32,42 @@ def data_organize(dt, data_dir, fname, window_bnd, max_num, set_max_det=False, e
     flight_time = flight_time[
         np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]  # Exclude specified t.o.f. bins
 
-    tot_lsr_shots = ds.sync_index.to_numpy()
+    lsr_shot_cntr = ds.sync_index.to_numpy()
     ttag_sync_idx = ds.time_tag_sync_index.values
 
     if exclude_shots:
         excl_sync = ds.sync_index[max_num].item()
         excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
         if excl_ttag_idx.size == 0:
-            nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - tot_lsr_shots[0]  # Subtract first index value to start at 0
+            nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
             print(
                 "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
                     nearest))
             excl_sync = ds.sync_index[nearest].item()
             excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0][0]
-            tot_lsr_shots = tot_lsr_shots[0:nearest]
+            lsr_shot_cntr = lsr_shot_cntr[0:nearest]
         else:
             excl_ttag_idx = excl_ttag_idx[0]
-            tot_lsr_shots = tot_lsr_shots[0:max_num]
+            lsr_shot_cntr = lsr_shot_cntr[0:max_num]
 
         flight_time = flight_time[0:excl_ttag_idx]
-        n_shots = len(tot_lsr_shots)
+        n_shots = len(lsr_shot_cntr)
     else:
         n_shots = len(ds.sync_index)
 
-    # Generate nested list of xarray.DataArrays, where each DataAarray consists of the detections per laser shot
+    # Generate nested list of DataArrays, where each array consists of the detections per laser shot
+    start = time.time()
     t_det_lst = []
-    for i in range(len(tot_lsr_shots)):
-        total_det = ds.time_tag[np.where(ttag_sync_idx == tot_lsr_shots[i])[0]]
+    for i in range(len(ttag_sync_idx)):
+        total_det = ds.time_tag[i]
         total_det = total_det * dt  # Convert from 25ps intervals to seconds
-        t_det_lst.append(total_det)
+        # If there are more than one detection per laser event, then append those to the same row in t_det_lst. Otherwise just append to a new row like normal.
+        if ttag_sync_idx[i] == ttag_sync_idx[i-1]:
+            t_det_lst.append(xr.DataArray(np.append(np.array([t_det_lst[-1].values]), total_det.values)))
+        else:
+            t_det_lst.append(total_det)
+    print('time elapsed: {} s'.format(time.time()-start))
+
+    print(t_det_lst)
 
     return flight_time, n_shots, t_det_lst

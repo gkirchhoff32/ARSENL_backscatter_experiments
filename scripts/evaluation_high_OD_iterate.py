@@ -16,9 +16,7 @@ import torch
 import os
 import sys
 import time
-import xarray as xr
 import pandas as pd
-import csv
 
 start = time.time()
 
@@ -40,9 +38,9 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_num_ref = int(1e6)                   # Include up to certain number of laser shots
+max_num_ref = int(1e5)                   # Include up to certain number of laser shots
 deadtime = 25e-9                  # [s] Acquisition deadtime
-use_stop_idx = True               # Set TRUE if you want to use the OD value preceding the reference OD
+use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
 include_deadtime = True  # Set True to include deadtime in noise model
 

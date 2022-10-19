@@ -153,25 +153,22 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
         active_ratio_hst += 1
         detections = t_det_lst[shot_num]
 
-        if detections.size == 0:
-            continue  # If no detection event for this shot, then skip
-        else:
-            for det in detections:
-                det_time = det.item()  # Time tag of detection that occurred during laser shot
+        for det in detections:
+            det_time = det.item()  # Time tag of detection that occurred during laser shot
 
-                # Only include detections that fall within fitting window
-                if det_time >= (t_min - deadtime) and det_time <= t_max:
-                    det_bin_idx = np.argmin(abs(det_time - bin_edges))  # Bin that detection falls into
-                    final_dead_bin = det_bin_idx + deadtime_n_bins  # Final bin index that deadtime occupies
+            # Only include detections that fall within fitting window
+            if det_time >= (t_min - deadtime) and det_time <= t_max:
+                det_bin_idx = np.argmin(abs(det_time - bin_edges))  # Bin that detection falls into
+                final_dead_bin = det_bin_idx + deadtime_n_bins  # Final bin index that deadtime occupies
 
-                    # Currently a crutch that assumes "dead" time >> window. Will need to include "wrap around" to be more accurate
-                    # If final dead bin surpasses fit window, set it to the window upper bin
-                    if final_dead_bin > len(active_ratio_hst):
-                        final_dead_bin = len(active_ratio_hst)
-                    # If initial dead bin (detection bin) precedes fit window, set it to the window lower bin
-                    if det_time < t_min:
-                        det_bin_idx = 0
-                    active_ratio_hst[det_bin_idx:final_dead_bin+1] -= 1  # Remove "dead" region in active ratio
+                # Currently a crutch that assumes "dead" time >> window. Will need to include "wrap around" to be more accurate
+                # If final dead bin surpasses fit window, set it to the window upper bin
+                if final_dead_bin > len(active_ratio_hst):
+                    final_dead_bin = len(active_ratio_hst)
+                # If initial dead bin (detection bin) precedes fit window, set it to the window lower bin
+                if det_time < t_min:
+                    det_bin_idx = 0
+                active_ratio_hst[det_bin_idx:final_dead_bin+1] -= 1  # Remove "dead" region in active ratio
 
     active_ratio_hst /= len(t_det_lst)  # Normalize for ratio
 
