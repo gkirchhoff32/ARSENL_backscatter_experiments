@@ -130,7 +130,7 @@ def cheby_poly(x, M):
 # numerical integration is proportionally reduced to how long it was active (i.e.,
 # unaffected by deadtime).
 
-def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
+def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots):
     """
     Deadtime adjustment for arrival rate estimate in optimizer.
     Parameters:
@@ -145,19 +145,18 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
 
     # Initialize
     bin_edges, dt = np.linspace(t_min, t_max, intgrl_N + 1, endpoint=False, retstep=True)
-    active_ratio_hst = np.zeros(len(bin_edges)-1)
+    active_ratio_hst = n_shots * np.ones(len(bin_edges)-1)
     deadtime_n_bins = np.floor(deadtime / dt).astype(int)  # Number of bins that deadtime occupies
 
     # Iterate through each shot. For each detection event, reduce the number of active bins according to deadtime length.
-    for shot_num in range(len(t_det_lst)):
-        active_ratio_hst += 1
-        detections = t_det_lst[shot_num]
+    for shot in range(len(t_det_lst)):
+        detections = t_det_lst[shot]
 
         for det in detections:
             det_time = det.item()  # Time tag of detection that occurred during laser shot
 
             # Only include detections that fall within fitting window
-            if det_time >= (t_min - deadtime) and det_time <= t_max:
+            if det_time >= (t_min-deadtime) and det_time <= t_max:
                 det_bin_idx = np.argmin(abs(det_time - bin_edges))  # Bin that detection falls into
                 final_dead_bin = det_bin_idx + deadtime_n_bins  # Final bin index that deadtime occupies
 
@@ -170,7 +169,8 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst):
                     det_bin_idx = 0
                 active_ratio_hst[det_bin_idx:final_dead_bin+1] -= 1  # Remove "dead" region in active ratio
 
-    active_ratio_hst /= len(t_det_lst)  # Normalize for ratio
+    # active_ratio_hst /= len(t_det_lst)  # Normalize for ratio
+    active_ratio_hst /= n_shots  # Normalize for ratio
 
     return torch.tensor(active_ratio_hst)
 

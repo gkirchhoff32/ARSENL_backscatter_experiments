@@ -38,7 +38,7 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_num_ref = int(1e5)                   # Include up to certain number of laser shots
+max_num_ref = int(1e6)                   # Include up to certain number of laser shots
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
@@ -82,7 +82,7 @@ print('Number of detections (reference): {}'.format(len(flight_time_ref)))
 print('Number of laser shots (reference): {}'.format(n_shots_ref))
 
 # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
-active_ratio_hst_ref = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_ref)
+active_ratio_hst_ref = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_ref, n_shots_ref)
 if not include_deadtime:
     active_ratio_hst_ref = torch.ones(len(active_ratio_hst_ref))
 
@@ -112,7 +112,7 @@ if run_full:
             exit()
 
         # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
-        active_ratio_hst = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst)
+        active_ratio_hst = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots)
         if not include_deadtime:
             active_ratio_hst = torch.ones(len(active_ratio_hst))
 

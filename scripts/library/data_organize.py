@@ -6,7 +6,6 @@
 
 import numpy as np
 import xarray as xr
-import time
 
 def data_organize(dt, data_dir, fname, window_bnd, max_num, set_max_det=False, exclude_shots=True):
     '''
@@ -56,18 +55,15 @@ def data_organize(dt, data_dir, fname, window_bnd, max_num, set_max_det=False, e
         n_shots = len(ds.sync_index)
 
     # Generate nested list of DataArrays, where each array consists of the detections per laser shot
-    start = time.time()
     t_det_lst = []
-    for i in range(len(ttag_sync_idx)):
-        total_det = ds.time_tag[i]
+    for i in range(len(flight_time)):
+        total_det = ds.time_tag[i].values
         total_det = total_det * dt  # Convert from 25ps intervals to seconds
+        total_det = np.array(total_det, ndmin=1, copy=False)
         # If there are more than one detection per laser event, then append those to the same row in t_det_lst. Otherwise just append to a new row like normal.
         if ttag_sync_idx[i] == ttag_sync_idx[i-1]:
-            t_det_lst.append(xr.DataArray(np.append(np.array([t_det_lst[-1].values]), total_det.values)))
+            t_det_lst[-1] = np.append(np.array([t_det_lst[-1]]), total_det)
         else:
             t_det_lst.append(total_det)
-    print('time elapsed: {} s'.format(time.time()-start))
-
-    print(t_det_lst)
 
     return flight_time, n_shots, t_det_lst
