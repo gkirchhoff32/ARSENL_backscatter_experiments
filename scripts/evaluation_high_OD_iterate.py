@@ -38,11 +38,13 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_num_ref = int(1e6)                   # Include up to certain number of laser shots
+max_lsr_num_ref = int(1e6)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
+set_max_det = True
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = True  # Set True to include deadtime in noise model
+include_deadtime = False  # Set True to include deadtime in noise model
 
 # Optimization parameters
 rel_step_lim = 1e-8  # termination criteria based on step size
@@ -55,7 +57,7 @@ intgrl_N = 10000  # Set number of steps in numerical integration
 # Otherwise set to False if you want to check a single polynomial order.
 single_step_iter = False
 M_max = 21  # Max polynomial complexity to test if iterating
-M_lst = np.arange(6, 16, 1)
+M_lst = np.arange(4, 20, 1)
 
 ########################################################################################################################
 
@@ -76,7 +78,9 @@ for i in range(len(files)):
 
 fname_ref = r'\OD30_Dev_0_-_2022-04-15_11.24.55.ARSENL.OD30.ARSENL.nc'
 OD_ref = int(fname_ref[3:5]) / 10
-flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd, max_num_ref, exclude_shots)
+flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd,
+                                                                 max_lsr_num_ref, max_det_num_ref, set_max_det,
+                                                                 exclude_shots)
 print('\n{}:'.format(fname_ref[1:5]))
 print('Number of detections (reference): {}'.format(len(flight_time_ref)))
 print('Number of laser shots (reference): {}'.format(n_shots_ref))
@@ -97,8 +101,10 @@ if run_full:
     for k in range(stop_idx):
         fname = r'/' + files[k]
         OD_fit = int(fname[3:5]) / 10
-        max_num = np.floor(max_num_ref / 10**(OD_ref-OD_fit)).astype(int)
-        flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_num, exclude_shots)
+        max_lsr_num = np.floor(max_lsr_num_ref / 10**(OD_ref-OD_fit)).astype(int)
+        max_det_num = max_det_num_ref
+        flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num, max_det_num,
+                                                             set_max_det, exclude_shots)
         print('\n{}:'.format(fname[1:5]))
         print('Number of detections: {}'.format(len(flight_time)))
         print('Number of laser shots: {}'.format(n_shots))
@@ -108,7 +114,7 @@ if run_full:
                 n_shots_fit, n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, n_shots, n_shots_ref)
         except:
             ZeroDivisionError
-            print('ERROR: Insufficient laser shots... increase the "max_num" parameter.')
+            print('ERROR: Insufficient laser shots... increase the "max_lsr_num" parameter.')
             exit()
 
         # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
@@ -187,7 +193,7 @@ if run_full:
         print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], hypothetical[k]))
 
     # Save to csv file
-    save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0], M_lst[-1], max_num_ref)
+    save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0], M_lst[-1], max_lsr_num_ref)
     headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor']
     df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
                         pd.DataFrame(hypothetical)], axis=1)
@@ -195,7 +201,7 @@ if run_full:
 
     print('Total run time: {} seconds'.format(time.time()-start))
 
-    save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.png'.format(include_deadtime, M_lst[0], M_lst[-1], max_num_ref)
+    save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.png'.format(include_deadtime, M_lst[0], M_lst[-1], max_lsr_num_ref)
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(OD_list[:stop_idx], eval_final_loss_lst, 'r.')
