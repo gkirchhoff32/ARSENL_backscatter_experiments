@@ -217,12 +217,11 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
 
     t_min, t_max = t_fine[0], t_fine[-1]
 
-    iter_len = len(M_lst)
-    val_loss_arr = np.zeros(M_max + 1)
-    eval_loss_arr = np.zeros(M_max + 1)
-    coeffs = np.zeros((M_max + 1, M_max + 1))
-    fit_rate_fine = np.zeros((M_max + 1, len(t_fine)))
-    C_scale_arr = np.zeros(M_max + 1)
+    val_loss_arr = np.full(M_max+1, np.nan)
+    eval_loss_arr = np.zeros(M_max+1)
+    coeffs = np.zeros((M_max+1, M_max+1))
+    fit_rate_fine = np.zeros((M_max+1, len(t_fine)))
+    C_scale_arr = np.zeros(M_max+1)
     print('Time elapsed:\n')
 
     fig = plt.figure()

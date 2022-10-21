@@ -1,7 +1,7 @@
 # validation_high_OD_iterate.py
 #
 # Grant Kirchhoff
-# Last Updated: 10/13/2022
+# Last Updated: 10/21/2022
 """
 Automation script to loop through different OD datasets and evaluate fit performance against an evaluation dataset
 (i.e., high OD setting).
@@ -38,9 +38,9 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_lsr_num_ref = int(1e6)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_lsr_num_ref = int(5e3)                   # If set_max_det set to FALSE, include up to certain number of laser shots
 max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
-set_max_det = True
+set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
@@ -57,7 +57,7 @@ intgrl_N = 10000  # Set number of steps in numerical integration
 # Otherwise set to False if you want to check a single polynomial order.
 single_step_iter = False
 M_max = 21  # Max polynomial complexity to test if iterating
-M_lst = np.arange(4, 20, 1)
+M_lst = np.arange(4, 16, 1)
 
 ########################################################################################################################
 
@@ -86,22 +86,26 @@ print('Number of detections (reference): {}'.format(len(flight_time_ref)))
 print('Number of laser shots (reference): {}'.format(n_shots_ref))
 
 # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
-active_ratio_hst_ref = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_ref, n_shots_ref)
+bin_edges = np.linspace(t_min, t_max, intgrl_N+1, endpoint=False)
 if not include_deadtime:
-    active_ratio_hst_ref = torch.ones(len(active_ratio_hst_ref))
+    active_ratio_hst_ref = torch.ones(len(bin_edges-1))
+else:
+    active_ratio_hst_ref = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_ref, n_shots_ref)
 
 # Fitting routine
 if run_full:
     val_final_loss_lst = []
     eval_final_loss_lst = []
     C_scale_final = []
+    percent_active_lst = []
     stop_idx = int(np.where(OD_list == OD_ref)[0])
     if not use_stop_idx:
         stop_idx = 3
     for k in range(stop_idx):
         fname = r'/' + files[k]
         OD_fit = int(fname[3:5]) / 10
-        max_lsr_num = np.floor(max_lsr_num_ref / 10**(OD_ref-OD_fit)).astype(int)
+        # max_lsr_num = np.floor(max_lsr_num_ref / 10**(OD_ref-OD_fit)).astype(int)
+        max_lsr_num = max_lsr_num_ref
         max_det_num = max_det_num_ref
         flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num, max_det_num,
                                                              set_max_det, exclude_shots)
@@ -118,9 +122,12 @@ if run_full:
             exit()
 
         # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
-        active_ratio_hst = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots)
         if not include_deadtime:
-            active_ratio_hst = torch.ones(len(active_ratio_hst))
+            active_ratio_hst = torch.ones(len(bin_edges-1))
+        else:
+            active_ratio_hst = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots)
+        percent_active = torch.sum(active_ratio_hst).item()/len(active_ratio_hst)
+        percent_active_lst.append(percent_active)
 
         # Optimization process
         if single_step_iter:
@@ -153,7 +160,7 @@ if run_full:
             print('Order {}: {:.5f}'.format(M_lst[i], eval_loss_arr[M_lst[i]]))
 
         # Choose order to investigate
-        minx, miny = np.argmin(val_loss_arr), min(val_loss_arr)
+        minx, miny = np.nanargmin(val_loss_arr), np.nanmin(val_loss_arr)
         min_order = minx
         try:
             model = coeffs[min_order, 0:min_order + 1]
@@ -193,15 +200,26 @@ if run_full:
         print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], hypothetical[k]))
 
     # Save to csv file
-    save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0], M_lst[-1], max_lsr_num_ref)
-    headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor']
+    if not set_max_det:
+        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime,
+                                                                                M_lst[0], M_lst[-1],
+                                                                                max_lsr_num_ref)
+    else:
+        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0],
+                                                                                M_lst[-1], max_lsr_num_ref)
+    headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor', 'Average %-age where Detector was Active']
     df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
-                        pd.DataFrame(hypothetical)], axis=1)
+                        pd.DataFrame(hypothetical), pd.DataFrame(percent_active_lst)], axis=1)
     df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
 
     print('Total run time: {} seconds'.format(time.time()-start))
 
-    save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.png'.format(include_deadtime, M_lst[0], M_lst[-1], max_lsr_num_ref)
+    if not set_max_det:
+        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.png'.format(include_deadtime, M_lst[0], M_lst[-1],
+                                                                                max_lsr_num_ref)
+    else:
+        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}.png'.format(include_deadtime, M_lst[0],
+                                                                                     M_lst[-1], max_lsr_num_ref)
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(OD_list[:stop_idx], eval_final_loss_lst, 'r.')
