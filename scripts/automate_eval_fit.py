@@ -1,8 +1,8 @@
-def automate_eval_fit(max_lsr_num_ref):
+def automate_eval_fit(max_lsr_num_ref, include_deadtime=True):
     # validation_high_OD_iterate.py
     #
     # Grant Kirchhoff
-    # Last Updated: 10/21/2022
+    # Last Updated: 10/24/2022
     """
     Automation script to loop through different OD datasets and evaluate fit performance against an evaluation dataset
     (i.e., high OD setting).
@@ -44,7 +44,6 @@ def automate_eval_fit(max_lsr_num_ref):
     deadtime = 25e-9                  # [s] Acquisition deadtime
     use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
     run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-    include_deadtime = True # Set True to include deadtime in noise model
 
     # Optimization parameters
     rel_step_lim = 1e-8  # termination criteria based on step size
@@ -107,15 +106,16 @@ def automate_eval_fit(max_lsr_num_ref):
             # max_lsr_num = np.floor(max_lsr_num_ref / 10**(OD_ref-OD_fit)).astype(int)
             max_lsr_num = max_lsr_num_ref
             max_det_num = max_det_num_ref
-            flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num, max_det_num,
-                                                                 set_max_det, exclude_shots)
+            flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num,
+                                                                 max_det_num, set_max_det, exclude_shots)
             print('\n{}:'.format(fname[1:5]))
             print('Number of detections: {}'.format(len(flight_time)))
             print('Number of laser shots: {}'.format(n_shots))
 
             try:
                 t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,\
-                    n_shots_fit, n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, n_shots, n_shots_ref)
+                    n_shots_fit, n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref,
+                                                                                       n_shots, n_shots_ref)
             except:
                 ZeroDivisionError
                 print('ERROR: Insufficient laser shots... increase the "max_lsr_num" parameter.')
@@ -138,11 +138,12 @@ def automate_eval_fit(max_lsr_num_ref):
 
             # Run fit optimizer
             ax, val_loss_arr, eval_loss_arr, \
-                fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
-                                                        t_phot_eval_tnsr, active_ratio_hst,
-                                                        active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval,
-                                                        learning_rate, rel_step_lim, intgrl_N,
-                                                        max_epochs, term_persist)
+                fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr,
+                                                                      t_phot_val_tnsr, t_phot_eval_tnsr,
+                                                                      active_ratio_hst, active_ratio_hst_ref,
+                                                                      n_shots_fit, n_shots_val, n_shots_eval,
+                                                                      learning_rate, rel_step_lim, intgrl_N, max_epochs,
+                                                                      term_persist)
 
             ax.set_ylabel('Loss')
             ax.set_xlabel('Iterations')
@@ -200,22 +201,25 @@ def automate_eval_fit(max_lsr_num_ref):
             print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], hypothetical[k]))
 
         # Save to csv file
-        if not set_max_det: save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime,
-                                                                                                    M_lst[0], M_lst[-1],
-                                                                                                    max_lsr_num_ref)
-        else: save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0],
+        if not set_max_det:
+            save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0],
                                                                                     M_lst[-1], max_lsr_num_ref)
-        headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor', 'Average %-age where Detector was Active']
+        else:
+            save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0],
+                                                                                    M_lst[-1], max_lsr_num_ref)
+        headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor',
+                   'Average %-age where Detector was Active']
         df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
                             pd.DataFrame(hypothetical), pd.DataFrame(percent_active_lst)], axis=1)
         df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
 
         print('Total run time: {} seconds'.format(time.time()-start))
 
-        if not set_max_det: save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.png'.format(include_deadtime,
-                                                                                                    M_lst[0], M_lst[-1],
-                                                                                                    max_lsr_num_ref)
-        else: save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}.png'.format(include_deadtime, M_lst[0],
+        if not set_max_det:
+            save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.png'.format(include_deadtime, M_lst[0],
+                                                                                    M_lst[-1], max_lsr_num_ref)
+        else:
+            save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}.png'.format(include_deadtime, M_lst[0],
                                                                                          M_lst[-1], max_lsr_num_ref)
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -231,9 +235,10 @@ if __name__ == '__main__':
     import numpy as np
     import matplotlib.pyplot as plt
     
-    max_lsr_num_lst = np.floor(np.logspace(3, 7, 16)).astype(int)
+    max_lsr_num_lst = np.floor(np.logspace(3, 5, 5)).astype(int)
+    include_deadtime = False
     for i in range(len(max_lsr_num_lst)):
         print('Number of laser shots: {}'.format(max_lsr_num_lst[i]))
-        automate_eval_fit(max_lsr_num_lst[i])
+        automate_eval_fit(max_lsr_num_lst[i], include_deadtime)
 
 

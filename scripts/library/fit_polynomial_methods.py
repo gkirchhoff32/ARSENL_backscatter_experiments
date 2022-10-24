@@ -78,7 +78,7 @@ class Fit_Pulse(torch.nn.Module):
 
         # dt = (self.t_max - self.t_min) / intgrl_N  # Step size
         _, dt = np.linspace(self.t_min, self.t_max, intgrl_N, endpoint=False, retstep=True)
-        assert (len(fine_res_model) == len(active_ratio_hst))
+        # assert (len(fine_res_model) == len(active_ratio_hst))
         active_ratio_hst.resize_(fine_res_model.size())
         fine_res_model = fine_res_model * active_ratio_hst  # Generate deadtime noise model
         integral_out = self.trapezoid(fine_res_model, dt)  # Numerically integrate
