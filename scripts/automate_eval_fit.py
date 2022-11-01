@@ -47,7 +47,7 @@ def automate_eval_fit(max_lsr_num_ref, include_deadtime=True):
 
     # Optimization parameters
     rel_step_lim = 1e-8  # termination criteria based on step size
-    max_epochs = 400  # maximum number of iterations/epochs
+    max_epochs = 300  # maximum number of iterations/epochs
     learning_rate = 1e-1  # ADAM learning rate
     term_persist = 20  # relative step size averaging interval in iterations
     intgrl_N = 10000  # Set number of steps in numerical integration
@@ -56,7 +56,7 @@ def automate_eval_fit(max_lsr_num_ref, include_deadtime=True):
     # Otherwise set to False if you want to check a single polynomial order.
     single_step_iter = False
     M_max = 21  # Max polynomial complexity to test if iterating
-    M_lst = np.arange(4, 16, 1)
+    M_lst = np.arange(6, 12, 1)
 
     ########################################################################################################################
 
