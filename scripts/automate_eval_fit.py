@@ -44,6 +44,7 @@ def automate_eval_fit(max_lsr_num_ref, include_deadtime=True):
     deadtime = 25e-9                  # [s] Acquisition deadtime
     use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
     run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
+    use_poisson_eval = True           # Set TRUE if you want to use the Poisson model for the evaluation loss
 
     # Optimization parameters
     rel_step_lim = 1e-8  # termination criteria based on step size
@@ -86,7 +87,7 @@ def automate_eval_fit(max_lsr_num_ref, include_deadtime=True):
 
     # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
     bin_edges = np.linspace(t_min, t_max, intgrl_N + 1, endpoint=False)
-    if not include_deadtime:
+    if use_poisson_eval:
         active_ratio_hst_ref = torch.ones(len(bin_edges - 1))
     else:
         active_ratio_hst_ref = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_ref, n_shots_ref)

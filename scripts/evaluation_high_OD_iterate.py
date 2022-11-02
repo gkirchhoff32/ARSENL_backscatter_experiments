@@ -45,6 +45,7 @@ deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
 include_deadtime = False  # Set True to include deadtime in noise model
+use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 
 # Optimization parameters
 rel_step_lim = 1e-8  # termination criteria based on step size
