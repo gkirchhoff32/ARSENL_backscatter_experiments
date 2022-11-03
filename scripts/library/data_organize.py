@@ -20,7 +20,7 @@ def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, max_det_num=1000
     :return:
     flight_time: (N_{tags}x1 xarray.DataArray) Time tags [s]
     n_shots: (int) Number of laser shots
-    t_det_lst: (?xn_shots list) Nested list of xarray.DataArrays, where each DataAarray consists of the detections per laser shot [s]
+    t_det_lst: ( ??xn_shots list) Nested list of xarray.DataArrays, where each DataAarray consists of the detections per laser shot [s]
     '''
 
     # Load and organize xarray dataset
@@ -28,8 +28,7 @@ def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, max_det_num=1000
 
     cnts = ds.time_tag
     flight_time = cnts * dt  # [s] Convert "time tags" from clock counts to actual timed tags
-    flight_time = flight_time[
-        np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]  # Exclude specified t.o.f. bins
+    flight_time = flight_time[np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]  # Exclude specified t.o.f. bins
 
     lsr_shot_cntr = ds.sync_index.to_numpy()
     ttag_sync_idx = ds.time_tag_sync_index.values

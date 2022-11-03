@@ -274,7 +274,7 @@ def photon_count_generator(t_arr: np.ndarray,
         # Else...ignore the photon since the photon detector is 
         # in deadtime
     
-    return np.array(ap_t_flt_lst),np.array(ac_t_flt_lst)
+    return np.array(ap_t_flt_lst), np.array(ac_t_flt_lst)
 
 def split_timetag_array(timetags,lasershot,totalshots=None):
     """
