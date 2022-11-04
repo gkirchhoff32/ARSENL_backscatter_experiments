@@ -45,8 +45,8 @@ def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_
     background = background  # background count rate
 
     # generate the simulated scene time axis
-    t_sim = np.arange(t_sim_min,t_sim_max,dt_sim)           # simulation time
-    t_sim_bins = np.concatenate((t_sim,t_sim[-1:]+dt_sim))  # simulation time histogram bins
+    t_sim = np.arange(t_sim_min, t_sim_max, dt_sim)           # simulation time
+    t_sim_bins = np.concatenate((t_sim, t_sim[-1:]+dt_sim))  # simulation time histogram bins
 
     # generate the photon arrival rate of the profile
     # Gaussian target with constant background

@@ -160,7 +160,7 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots):
                 det_bin_idx = np.argmin(abs(det_time - bin_edges))  # Bin that detection falls into
                 final_dead_bin = det_bin_idx + deadtime_n_bins  # Final bin index that deadtime occupies
 
-                # Currently a crutch that assumes "dead" time >> window. Will need to include "wrap around" to be more accurate
+                # Currently a crutch that assumes "dead" time >> potwindow. Will need to include "wrap around" to be more accurate
                 # If final dead bin surpasses fit window, set it to the window upper bin
                 if final_dead_bin > len(active_ratio_hst):
                     final_dead_bin = len(active_ratio_hst)
