@@ -105,7 +105,6 @@ if run_full:
     for k in range(stop_idx):
         fname = r'/' + files[k]
         OD_fit = int(fname[3:5]) / 10
-        # max_lsr_num = np.floor(max_lsr_num_ref / 10**(OD_ref-OD_fit)).astype(int)
         max_lsr_num = max_lsr_num_ref
         max_det_num = max_det_num_ref
         flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num, max_det_num,

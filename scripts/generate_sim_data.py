@@ -100,13 +100,33 @@ if __name__ == '__main__':
 
     laser_pulse_width = 500e-12  # laser pulse width in seconds
     target_time = 31.2e-9
-    target_amplitude = 1e8  # target peak count rate
+    target_amplitude = 5e7  # target peak count rate
     background = 1e4  # background count rate
+
+    save_netCDF = True
 
     flight_time, true_flight_time, n_shots, t_det_lst, t_phot_lst = gen_sim_data(t_sim_max, dt_sim, tD, Nshot,
                                                                                  wrap_deadtime, window_bnd,
                                                                                  laser_pulse_width, target_time,
                                                                                  target_amplitude, background)
+    # t_det_lst = t_det_lst
+    # print(t_det_lst )
+
+    # Save simulated data to netCDF
+    if save_netCDF:
+        processed_data = xr.Dataset(
+            data_vars=dict(
+                # flight_time=flight_time,
+                # n_shots=n_shots,
+                t_det_lst=t_det_lst
+            ),
+            attrs=dict(
+                description="'flight_time': time tagged data; \n'n_shots': number of laser shots; \n't_det_lst': detections per laser shot in each corresponding row")
+        )
+
+        save_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\simulated'
+        fname_nc = r'\sim_amp{:.1E}_nshot{:.0E}.nc'.format(target_amplitude, Nshot)
+        processed_data.to_netcdf(save_dir + fname_nc)
 
     phot_arr = np.array(sorted(np.concatenate(t_phot_lst)))
     plt.figure()
