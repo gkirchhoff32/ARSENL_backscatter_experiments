@@ -12,6 +12,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import xarray as xr
+import pickle
 
 # import library for simulating Poisson point processes
 cwd = os.getcwd()
@@ -77,16 +78,19 @@ def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_
     print('time elapsed: {}'.format(time.time() - start))
 
     flight_time = xr.DataArray(np.concatenate(t_det_lst))
-    flight_time = flight_time[np.where((flight_time>=window_bnd[0]) & (flight_time<window_bnd[1]))]  # Exclude specified t.o.f. bins
+    flight_time = flight_time[np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]  # Exclude specified t.o.f. bins
     n_shots = Nshot
     t_det_lst = t_det_lst
 
     true_flight_time = xr.DataArray(np.concatenate(t_phot_lst))
-    true_flight_time = true_flight_time[np.where((true_flight_time>=window_bnd[0]) & (true_flight_time<window_bnd[1]))]
+    true_flight_time = true_flight_time[np.where((true_flight_time >= window_bnd[0]) & (true_flight_time < window_bnd[1]))]
 
     return flight_time, true_flight_time, n_shots, t_det_lst, t_phot_lst
 
 if __name__ == '__main__':
+
+    ### PARAMETERS ###
+
     # simulation resolution settings
     t_sim_min = 0
     t_sim_max = 40e-9
@@ -100,33 +104,43 @@ if __name__ == '__main__':
 
     laser_pulse_width = 500e-12  # laser pulse width in seconds
     target_time = 31.2e-9
-    target_amplitude = 5e7  # target peak count rate
+    target_amplitude = 1e10  # target peak count rate
     background = 1e4  # background count rate
 
-    save_netCDF = True
+    serialize = True
+
+
+    ### GENERATE SIMULATED DATA ###
 
     flight_time, true_flight_time, n_shots, t_det_lst, t_phot_lst = gen_sim_data(t_sim_max, dt_sim, tD, Nshot,
                                                                                  wrap_deadtime, window_bnd,
                                                                                  laser_pulse_width, target_time,
                                                                                  target_amplitude, background)
-    # t_det_lst = t_det_lst
-    # print(t_det_lst )
 
     # Save simulated data to netCDF
-    if save_netCDF:
+    if serialize:
         processed_data = xr.Dataset(
             data_vars=dict(
-                # flight_time=flight_time,
-                # n_shots=n_shots,
-                t_det_lst=t_det_lst
+                flight_time=xr.DataArray(flight_time, dims='flight time'),
+                true_flight_time=xr.DataArray(true_flight_time, dims='true flight time'),
+                n_shots=n_shots,
+                t_det_lst=(['det1', 'det2'], t_det_lst),
+                t_phot_lst=('true detections', t_phot_lst),
+                target_amplitude=target_amplitude,
+                target_time=target_time,
+                laser_pulse_width=laser_pulse_width,
+                window_bnd=window_bnd,
+                background=background
             ),
             attrs=dict(
                 description="'flight_time': time tagged data; \n'n_shots': number of laser shots; \n't_det_lst': detections per laser shot in each corresponding row")
         )
 
-        save_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\simulated'
-        fname_nc = r'\sim_amp{:.1E}_nshot{:.0E}.nc'.format(target_amplitude, Nshot)
-        processed_data.to_netcdf(save_dir + fname_nc)
+        save_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\simulated'
+        fname_pkl = r'\sim_amp{:.1E}_nshot{:.1E}.pkl'.format(target_amplitude, Nshot)
+        outfile = open(save_dir+fname_pkl, 'wb')
+        pickle.dump(processed_data, outfile)
+        outfile.close()
 
     phot_arr = np.array(sorted(np.concatenate(t_phot_lst)))
     plt.figure()
@@ -141,17 +155,17 @@ if __name__ == '__main__':
     # Scaled time-of-flight histogram
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    n, bins = np.histogram(flight_time*1e9, bins=15)
+    n, bins = np.histogram(flight_time*1e9, bins=30)
     binwidth = np.diff(bins)[0]
     N = n / binwidth / 1e-9 / n_shots  # [Hz] Scaling counts to arrival rate
     center = 0.5 * (bins[:-1] + bins[1:])
     ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5, label='detected photons')
-    n, bins = np.histogram(true_flight_time*1e9, bins=15)
+    n, bins = np.histogram(true_flight_time*1e9, bins=30)
     binwidth = np.diff(bins)[0]
     N = n / binwidth / 1e-9 / n_shots  # [Hz] Scaling counts to arrival rate
     center = 0.5 * (bins[:-1] + bins[1:])
     ax.bar(center, N, align='center', width=binwidth, color='r', alpha=0.5, label='true photons')
-    ax.set_title('Arrival Rate Historam')
+    ax.set_title('Arrival Rate Histogram')
     ax.set_xlabel('time [ns]')
     ax.set_ylabel('Photon Arrival Rate [Hz]')
     plt.legend()
