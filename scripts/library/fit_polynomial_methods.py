@@ -174,7 +174,7 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots):
 
     return torch.tensor(active_ratio_hst)
 
-def generate_fit_val_eval(data, data_ref, n_shots, n_shots_ref):
+def generate_fit_val_eval(data, data_ref, t_det_lst, n_shots, n_shots_ref):
     """
     Generates fit, validation, and evaluation data sets for the fitting routine. Recall (1) Fit set: Dataset used to
     generate the fit; (2) Validation set: Independent dataset used to calculate validation loss; and (3) Evaluation set:
@@ -196,6 +196,9 @@ def generate_fit_val_eval(data, data_ref, n_shots, n_shots_ref):
     t_phot_fit = data[:split_value]
     t_phot_val = data[split_value:]
     t_phot_eval = data_ref[:]
+    split_value_det = int(len(t_det_lst) // 2)
+    t_det_lst_fit = t_det_lst[:split_value_det]
+    t_det_lst_val = t_det_lst[split_value_det:]
 
     # Adjust number of laser shots corresponding to fit and val sets
     ratio_fit_split = len(t_phot_fit) / len(data)
@@ -208,12 +211,12 @@ def generate_fit_val_eval(data, data_ref, n_shots, n_shots_ref):
     t_phot_val_tnsr = torch.tensor(t_phot_val.to_numpy())
     t_phot_eval_tnsr = torch.tensor(t_phot_eval.to_numpy())
 
-    return t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, n_shots_fit, n_shots_val, n_shots_eval
+    return t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, t_det_lst_fit, t_det_lst_val, n_shots_fit, n_shots_val, n_shots_eval
 
 
-def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, active_ratio_hst,
-                active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval, learning_rate=1e-1, rel_step_lim=1e-8,
-                intgrl_N=10000, max_epochs=400, term_persist=20):
+def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, active_ratio_hst_fit,
+                active_ratio_hst_val, active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval, learning_rate=1e-1,
+                rel_step_lim=1e-8, intgrl_N=10000, max_epochs=400, term_persist=20):
 
     t_min, t_max = t_fine[0], t_fine[-1]
 
@@ -253,7 +256,7 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         t_intgrl = cheby_poly(torch.linspace(0, 1, intgrl_N), M)
         while rel_step > rel_step_lim and epoch < max_epochs:
             fit_model.train()
-            pred_fit, integral_fit = fit_model(intgrl_N, active_ratio_hst, t_fit_norm, t_intgrl, cheby=True)
+            pred_fit, integral_fit = fit_model(intgrl_N, active_ratio_hst_fit, t_fit_norm, t_intgrl, cheby=True)
             loss_fit = loss_fn(pred_fit, integral_fit * n_shots_fit)  # add regularization here
             fit_loss_lst += [loss_fit.item()]
 
@@ -274,13 +277,13 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
 
             epoch += 1
 
-        pred_mod_seg, __ = fit_model(intgrl_N, active_ratio_hst, torch.tensor(t_fine), t_intgrl, cheby=False)
+        pred_mod_seg, __ = fit_model(intgrl_N, active_ratio_hst_fit, torch.tensor(t_fine), t_intgrl, cheby=False)
         fit_rate_fine[M, :] = pred_mod_seg.detach().numpy().T
         coeffs[M, 0:M + 1] = fit_model.C.detach().numpy().T
 
         # Calculate validation loss
         # Using fit generated from fit set, calculate loss when applied to validation set
-        pred_val, integral_val = fit_model(intgrl_N, active_ratio_hst, t_val_norm, t_intgrl, cheby=True)
+        pred_val, integral_val = fit_model(intgrl_N, active_ratio_hst_val, t_val_norm, t_intgrl, cheby=True)
         loss_val = loss_fn(pred_val, integral_val * n_shots_val)
         val_loss_arr[M] = loss_val
 

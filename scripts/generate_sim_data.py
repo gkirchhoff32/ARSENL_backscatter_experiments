@@ -97,14 +97,14 @@ if __name__ == '__main__':
     dt_sim = 1e-12
 
     tD = 25e-9  # deadtime
-    Nshot = int(1e4)  # number of laser shots
+    Nshot = int(1e6)  # number of laser shots
     wrap_deadtime = True  # wrap deadtime between shots
 
     window_bnd = [26e-9, 34e-9]
 
     laser_pulse_width = 500e-12  # laser pulse width in seconds
     target_time = 31.2e-9
-    target_amplitude = 1e10  # target peak count rate
+    target_amplitude = 1e6  # target peak count rate
     background = 1e4  # background count rate
 
     serialize = True
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                 flight_time=xr.DataArray(flight_time, dims='flight time'),
                 true_flight_time=xr.DataArray(true_flight_time, dims='true flight time'),
                 n_shots=n_shots,
-                t_det_lst=(['det1', 'det2'], t_det_lst),
+                t_det_lst=(['det1'], t_det_lst),
                 t_phot_lst=('true detections', t_phot_lst),
                 target_amplitude=target_amplitude,
                 target_time=target_time,
@@ -142,15 +142,15 @@ if __name__ == '__main__':
         pickle.dump(processed_data, outfile)
         outfile.close()
 
-    phot_arr = np.array(sorted(np.concatenate(t_phot_lst)))
-    plt.figure()
-    plt.stem(phot_arr, np.ones(phot_arr.size))
-    plt.title('Photons')
-
-    cnt_arr = np.array(sorted(np.concatenate(t_det_lst)))
-    plt.figure()
-    plt.stem(cnt_arr, np.ones(cnt_arr.size))
-    plt.title('Detected Photons')
+    # phot_arr = np.array(sorted(np.concatenate(t_phot_lst)))
+    # plt.figure()
+    # plt.stem(phot_arr, np.ones(phot_arr.size))
+    # plt.title('Photons')
+    # 
+    # cnt_arr = np.array(sorted(np.concatenate(t_det_lst)))
+    # plt.figure()
+    # plt.stem(cnt_arr, np.ones(cnt_arr.size))
+    # plt.title('Detected Photons')
 
     # Scaled time-of-flight histogram
     fig = plt.figure()

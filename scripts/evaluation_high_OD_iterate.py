@@ -38,13 +38,13 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_lsr_num_ref = int(5e3)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_lsr_num_ref = int(1e6)                   # If set_max_det set to FALSE, include up to certain number of laser shots
 max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
 set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = False  # Set True to include deadtime in noise model
+include_deadtime = True  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 
 # Optimization parameters
@@ -115,7 +115,8 @@ if run_full:
 
         try:
             t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,\
-                n_shots_fit, n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, n_shots, n_shots_ref)
+                t_det_lst_fit, t_det_lst_val, \
+                    n_shots_fit, n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, t_det_lst, n_shots, n_shots_ref)
         except:
             ZeroDivisionError
             print('ERROR: Insufficient laser shots... increase the "max_lsr_num" parameter.')
@@ -123,10 +124,12 @@ if run_full:
 
         # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
         if not include_deadtime:
-            active_ratio_hst = torch.ones(len(bin_edges-1))
+            active_ratio_hst_fit = torch.ones(len(bin_edges-1))
+            active_ratio_hst_val = torch.ones(len(bin_edges-1))
         else:
-            active_ratio_hst = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots)
-        percent_active = torch.sum(active_ratio_hst).item()/len(active_ratio_hst)
+            active_ratio_hst_fit = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_fit, n_shots_fit)
+            active_ratio_hst_val = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_val, n_shots_val)
+        percent_active = torch.sum(active_ratio_hst_fit).item()/len(active_ratio_hst_fit)
         percent_active_lst.append(percent_active)
 
         # Optimization process
@@ -139,7 +142,7 @@ if run_full:
         # Run fit optimizer
         ax, val_loss_arr, eval_loss_arr, \
             fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
-                                                    t_phot_eval_tnsr, active_ratio_hst,
+                                                    t_phot_eval_tnsr, active_ratio_hst_fit, active_ratio_hst_val,
                                                     active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval,
                                                     learning_rate, rel_step_lim, intgrl_N,
                                                     max_epochs, term_persist)
