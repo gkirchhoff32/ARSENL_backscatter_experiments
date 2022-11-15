@@ -18,7 +18,6 @@ import pickle
 import matplotlib.pyplot as plt
 
 start = time.time()
-from load_ARSENL_data import load_INPHAMIS_data
 from load_ARSENL_data import load_INPHAMIS_data, data_dir, fname, picklename
 
 start = time.time()
@@ -28,8 +27,7 @@ c = 299792458  # [m/s] Speed of light
 # Parameters
 create_csv = 0  # Set true to generate a .csv from .ARSENL data
 load_data = True  # Set true to load data into a DataFrame and serialize into a pickle object
-load_data = 0  # Set true to load data into a DataFrame and serialize into a pickle object
-irregular_data = 1  # Set true if data has gaps (i.e., dtime is 0 for many clock cycles)
+irregular_data = False  # Set true if data has gaps (i.e., dtime is 0 for many clock cycles)
 exclude = [20000, 40000]  # Set boundaries for binning
 
 # Load INPHAMIS .ARSENL data if not yet serialized
@@ -43,6 +41,8 @@ infile.close()
 
 df1 = df.loc[df['dtime'] != 0]
 detect = df1.loc[(df1['overflow'] == 0) & (df1['channel'] == 0)]  # Return data for detection event ("overflow","channel" = 0,0)
+sync = df1.loc[(df1['overflow'] == 1) & (df1['channel'] == 0)]
+n_shots = len(sync)
 
 sync_detect_idx = np.array(detect.index) - 1  # Extract index immediately prior to detection event to match with laser pulse
 sync_detect = df.loc[sync_detect_idx]  # Laser pulse event prior to detection event
@@ -71,14 +71,20 @@ distance = flight_time / 1e12 * c / 2
 fig = plt.figure()
 ax1 = fig.add_subplot(211)
 ax2 = fig.add_subplot(212)
-n1, bins1, patches1 = ax1.hist(flight_time, bins=200)
+n, bins = np.histogram(flight_time/1e12, bins=60)
+# n1, bins1, patches1 = ax1.hist(flight_time, bins=200)
 print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
 print('Histogram plot time elapsed: {:.3} sec:'.format(time.time() - start))
-n2, bins2, patches2 = ax2.hist(distance, bins=200)
+binwidth = np.diff(bins)[0]
+N = n / binwidth / n_shots
+center = 0.5 * (bins[:-1] + bins[1:])
+ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75)
+# n2, bins2, patches2 = ax2.hist(distance, bins=200)
 ax1.set_xlabel('Time of flight [ps]')
+ax1.set_ylabel('Arrival rate [MHz]')
 ax1.set_title('Time of flight for INPHAMIS backscatter')
-ax2.set_xlabel('Range [m]')
-ax2.set_title('Detected range for INPHAMIS backscatter')
+# ax2.set_xlabel('Range [m]')
+# ax2.set_title('Detected range for INPHAMIS backscatter')
 plt.tight_layout()
 plt.show()
 
