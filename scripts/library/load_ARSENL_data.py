@@ -26,7 +26,7 @@ import pickle
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
 data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\ARSENL_backscatter_experiments\Data'
-fname = r'\Dev_0_-_2022-11-14_16.26.58.ARSENL'
+fname = r'\Dev_1_-_2022-11-14_16.26.58.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
