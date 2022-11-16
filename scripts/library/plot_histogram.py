@@ -71,7 +71,7 @@ distance = flight_time / 1e12 * c / 2
 fig = plt.figure()
 ax1 = fig.add_subplot(211)
 ax2 = fig.add_subplot(212)
-n, bins = np.histogram(flight_time/1e12, bins=60)
+n, bins = np.histogram(flight_time/1e12, bins=90)
 # n1, bins1, patches1 = ax1.hist(flight_time, bins=200)
 print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
 print('Histogram plot time elapsed: {:.3} sec:'.format(time.time() - start))
