@@ -25,8 +25,8 @@ import pickle
 # Path settings
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
-data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\ARSENL_backscatter_experiments\Data\troubleshooting_alignment'
-fname = r'\Dev_0_-_2022-11-16_15.55.19_moved_FS_level_to_0.90_right.ARSENL'
+data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-06 Different OD'
+fname = r'\Dev_0_-_2022-12-08_17.25.29_OD1.0_new_flipped.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
