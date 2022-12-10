@@ -71,10 +71,14 @@ distance = flight_time / 1e12 * c / 2
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 # ax2 = fig.add_subplot(212)
-n, bins = np.histogram(flight_time/1e12, bins=50)
+bin_num = int((exclude[1] - exclude[0]) / 25)
+# print(bin_num)
+bin_array = np.arange(exclude[0]*1e-12, (exclude[1]+25)*1e-12, 25e-12)
+n, bins = np.histogram(flight_time/1e12, bins=bin_array)
 # n1, bins1, patches1 = ax1.hist(flight_time, bins=200)
 print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
 binwidth = np.diff(bins)[0]
+print(binwidth)
 N = n / binwidth / n_shots
 center = 0.5 * (bins[:-1] + bins[1:])
 ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75)
