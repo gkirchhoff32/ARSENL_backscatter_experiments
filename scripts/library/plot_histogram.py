@@ -78,7 +78,6 @@ n, bins = np.histogram(flight_time/1e12, bins=bin_array)
 # n1, bins1, patches1 = ax1.hist(flight_time, bins=200)
 print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
 binwidth = np.diff(bins)[0]
-print(binwidth)
 N = n / binwidth / n_shots
 center = 0.5 * (bins[:-1] + bins[1:])
 ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75)
