@@ -69,7 +69,7 @@ t_max = window_bnd[1]
 dt = dt
 t_fine = np.arange(t_min, t_max, dt)
 
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Deadtime_Experiments_HiFi'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV'
 save_dir = load_dir + r'/../../Figures/evaluation_loss'
 files = os.listdir(load_dir)
 
