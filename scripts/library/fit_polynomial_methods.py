@@ -202,7 +202,7 @@ def generate_fit_val_eval(data, data_ref, t_det_lst, n_shots, n_shots_ref):
 
     # Adjust number of laser shots corresponding to fit and val sets
     ratio_fit_split = len(t_phot_fit) / len(data)
-    ratio_val_split = len(t_phot_val) / len(data_ref)
+    ratio_val_split = len(t_phot_val) / len(data)
     n_shots_fit = np.floor(n_shots * ratio_fit_split).astype(int)
     n_shots_val = np.floor(n_shots * ratio_val_split).astype(int)
     n_shots_eval = n_shots_ref
@@ -295,7 +295,7 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         # If the number of shots between evaluation set and validation set differ, then arrival rate needs to be scaled accordingly.
         n_det_eval = len(pred_eval)
         C_scale = n_det_eval / n_shots_eval / integral_eval
-        loss_eval = loss_fn(C_scale * pred_eval, C_scale * integral_eval * n_shots_eval)
+        loss_eval = loss_fn(C_scale * pred_eval, C_scale * integral_eval * torch.tensor(n_shots_eval))
         eval_loss_arr[M] = loss_eval
         C_scale_arr[M] = C_scale
 
