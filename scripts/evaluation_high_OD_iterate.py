@@ -38,14 +38,15 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_lsr_num_ref = int(1e6)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_lsr_num_ref = int(1e5)                   # If set_max_det set to FALSE, include up to certain number of laser shots
 max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
 set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = True  # Set True to include deadtime in noise model
+include_deadtime = False  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
+standard_correction = False  # Set TRUE if you want to use the standard deadtime correction inversion ( rho_obs = rho/(1+tau*rho) )
 
 # Optimization parameters
 rel_step_lim = 1e-8  # termination criteria based on step size
@@ -58,7 +59,7 @@ intgrl_N = 10000  # Set number of steps in numerical integration
 # Otherwise set to False if you want to check a single polynomial order.
 single_step_iter = False
 M_max = 21  # Max polynomial complexity to test if iterating
-M_lst = np.arange(4, 16, 1)
+M_lst = np.arange(4, 8, 1)
 
 ########################################################################################################################
 
@@ -69,15 +70,15 @@ t_max = window_bnd[1]
 dt = dt
 t_fine = np.arange(t_min, t_max, dt)
 
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV'
-save_dir = load_dir + r'/../../Figures/evaluation_loss'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV\netcdf'
+save_dir = load_dir + r'/../../../Figures/evaluation_loss'
 files = os.listdir(load_dir)
 
 OD_list = np.zeros(len(files))
 for i in range(len(files)):
     OD_list[i] = float(files[i][2:4]) / 10
 
-fname_ref = r'\OD30_Dev_0_-_2022-04-15_11.24.55.ARSENL.OD30.ARSENL.nc'
+fname_ref = r'\OD23Dev_0_-_2022-12-15_12.35.09_OD2.3.ARSENL.nc'
 OD_ref = int(fname_ref[3:5]) / 10
 flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd,
                                                                  max_lsr_num_ref, max_det_num_ref, set_max_det,
@@ -145,7 +146,7 @@ if run_full:
                                                     t_phot_eval_tnsr, active_ratio_hst_fit, active_ratio_hst_val,
                                                     active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval,
                                                     learning_rate, rel_step_lim, intgrl_N,
-                                                    max_epochs, term_persist)
+                                                    max_epochs, term_persist, standard_correction, deadtime)
 
         ax.set_ylabel('Loss')
         ax.set_xlabel('Iterations')

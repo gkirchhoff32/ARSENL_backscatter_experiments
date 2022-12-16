@@ -216,7 +216,8 @@ def generate_fit_val_eval(data, data_ref, t_det_lst, n_shots, n_shots_ref):
 
 def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, active_ratio_hst_fit,
                 active_ratio_hst_val, active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval, learning_rate=1e-1,
-                rel_step_lim=1e-8, intgrl_N=10000, max_epochs=400, term_persist=20):
+                rel_step_lim=1e-8, intgrl_N=10000, max_epochs=400, term_persist=20, standard_correction=False,
+                deadtime=25e-9):
 
     t_min, t_max = t_fine[0], t_fine[-1]
 
@@ -257,6 +258,7 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         while rel_step > rel_step_lim and epoch < max_epochs:
             fit_model.train()
             pred_fit, integral_fit = fit_model(intgrl_N, active_ratio_hst_fit, t_fit_norm, t_intgrl, cheby=True)
+            # TODO: if using standard deadtime correction "inversion," then 'pred_fit' and 'integral_fit' need to be changed.
             loss_fit = loss_fn(pred_fit, integral_fit * n_shots_fit)  # add regularization here
             fit_loss_lst += [loss_fit.item()]
 
