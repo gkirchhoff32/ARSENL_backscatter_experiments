@@ -26,7 +26,7 @@ import pickle
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
 data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV'
-fname = r'\Dev_0_-_2022-12-15_13.34.31_OD2.0.ARSENL'
+fname = r'\OD20Dev_0_-_2022-12-15_13.34.31_OD2.0.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
@@ -56,6 +56,10 @@ def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
 
 def load_xarray_dataset(data_dir, fname):
     dataset = xr.open_dataset(data_dir + fname)
+
+def set_binwidth(tmin, tmax, resolution):
+    bin_array = np.arange(tmin, tmax+resolution, resolution)
+    return bin_array
 
 
 

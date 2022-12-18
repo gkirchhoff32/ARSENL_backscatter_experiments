@@ -18,7 +18,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 start = time.time()
-from load_ARSENL_data import load_INPHAMIS_data, data_dir, fname, picklename
+from load_ARSENL_data import load_INPHAMIS_data, set_binwidth, data_dir, fname, picklename
 
 start = time.time()
 # Constants
@@ -70,7 +70,8 @@ distance = flight_time / 1e12 * c / 2
 ### Histogram of time of flight ###
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
-bin_array = np.arange(exclude[0]*1e-12, (exclude[1]+25)*1e-12, 25e-12)
+bin_array = set_binwidth(exclude[0]*1e-12, exclude[1]*1e-12, 25e-12)
+# bin_array = np.arange(exclude[0]*1e-12, (exclude[1]+25)*1e-12, 25e-12)
 n, bins = np.histogram(flight_time*1e-12, bins=bin_array)
 print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
 binwidth = np.diff(bins)[0]

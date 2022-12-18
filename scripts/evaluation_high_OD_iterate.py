@@ -27,6 +27,7 @@ if dirLib not in sys.path:
 
 import fit_polynomial_methods as fit
 import data_organize as dorg
+from load_ARSENL_data import set_binwidth
 
 ########################################################################################################################
 
@@ -44,7 +45,7 @@ set_max_det = False                          # Set TRUE if data limiter is numbe
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = False  # Set True to include deadtime in noise model
+include_deadtime = True  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 standard_correction = False  # Set TRUE if you want to use the standard deadtime correction inversion ( rho_obs = rho/(1+tau*rho) )
 
@@ -59,7 +60,7 @@ intgrl_N = 10000  # Set number of steps in numerical integration
 # Otherwise set to False if you want to check a single polynomial order.
 single_step_iter = False
 M_max = 21  # Max polynomial complexity to test if iterating
-M_lst = np.arange(4, 8, 1)
+M_lst = np.arange(4, 11, 1)
 
 ########################################################################################################################
 
@@ -100,6 +101,7 @@ if run_full:
     eval_final_loss_lst = []
     C_scale_final = []
     percent_active_lst = []
+    fit_rate_seg_lst = []
     stop_idx = int(np.where(OD_list == OD_ref)[0])
     if not use_stop_idx:
         stop_idx = 3
@@ -142,11 +144,10 @@ if run_full:
 
         # Run fit optimizer
         ax, val_loss_arr, eval_loss_arr, \
-            fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
-                                                    t_phot_eval_tnsr, active_ratio_hst_fit, active_ratio_hst_val,
-                                                    active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval,
-                                                    learning_rate, rel_step_lim, intgrl_N,
-                                                    max_epochs, term_persist, standard_correction, deadtime)
+            fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,
+                                            active_ratio_hst_fit, active_ratio_hst_val, active_ratio_hst_ref,
+                                            n_shots_fit, n_shots_val, n_shots_eval, learning_rate, rel_step_lim,
+                                            intgrl_N, max_epochs, term_persist, standard_correction, deadtime)
 
         ax.set_ylabel('Loss')
         ax.set_xlabel('Iterations')
@@ -176,11 +177,13 @@ if run_full:
         val_final_loss_lst.append(val_loss_arr[min_order])
         eval_final_loss_lst.append(eval_loss_arr[min_order])
         C_scale_final.append(C_scale_arr[min_order])
+        # pred_mod_seg_lst.append(pred_mod_seg)
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        n, bins = np.histogram(flight_time, bins=34)
+        bin_array = set_binwidth(t_min, t_max, dt)
+        n, bins = np.histogram(flight_time, bins=bin_array)
         binwidth = np.diff(bins)[0]
         N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
         center = 0.5 * (bins[:-1] + bins[1:])
@@ -198,6 +201,8 @@ if run_full:
                 verticalalignment='top', bbox=props)
         plt.tight_layout()
 
+        fit_rate_seg_lst.append(fit_rate_seg)
+
     hypothetical = 0.1**(OD_ref-np.array(OD_list))
     print('\nScale factor for OD:')
     for k in range(stop_idx):
@@ -208,13 +213,24 @@ if run_full:
         save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime,
                                                                                 M_lst[0], M_lst[-1],
                                                                                 max_lsr_num_ref)
+        save_csv_file_fit = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}_best_fit.csv'.format(include_deadtime,
+                                                                                   M_lst[0], M_lst[-1],
+                                                                                   max_lsr_num_ref)
     else:
         save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0],
                                                                                 M_lst[-1], max_lsr_num_ref)
+        save_csv_file_fit = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}_best_fit.csv'.format(include_deadtime, M_lst[0],
+                                                                                   M_lst[-1], max_lsr_num_ref)
     headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor', 'Average %-age where Detector was Active']
     df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
                         pd.DataFrame(hypothetical), pd.DataFrame(percent_active_lst)], axis=1)
     df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
+
+    headers = ['OD'+str(i) for i in OD_list[:stop_idx]]
+    headers.insert(0, 'time vector')
+    df_out = pd.DataFrame(np.array(fit_rate_seg_lst).T.tolist())
+    df_out = pd.concat([pd.DataFrame(t_fine), df_out], axis=1)
+    df_out = df_out.to_csv(save_dir + save_csv_file_fit, header=headers)
 
     print('Total run time: {} seconds'.format(time.time()-start))
 
