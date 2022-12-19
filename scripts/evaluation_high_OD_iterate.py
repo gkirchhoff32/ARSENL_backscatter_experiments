@@ -17,6 +17,7 @@ import os
 import sys
 import time
 import pandas as pd
+import pickle
 
 start = time.time()
 
@@ -39,13 +40,13 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_lsr_num_ref = int(1e5)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_lsr_num_ref = int(1e4)                   # If set_max_det set to FALSE, include up to certain number of laser shots
 max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
 set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = False  # Set True to include deadtime in noise model
+include_deadtime = True  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 standard_correction = False  # Set TRUE if you want to use the standard deadtime correction inversion ( rho_obs = rho/(1+tau*rho) )
 
@@ -71,7 +72,7 @@ t_max = window_bnd[1]
 dt = dt
 t_fine = np.arange(t_min, t_max, dt)
 
-load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV\netcdf'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV\netcdf'
 save_dir = load_dir + r'/../../../Figures/evaluation_loss'
 files = os.listdir(load_dir)
 
@@ -102,6 +103,7 @@ if run_full:
     C_scale_final = []
     percent_active_lst = []
     fit_rate_seg_lst = []
+    flight_time_lst = []
     stop_idx = int(np.where(OD_list == OD_ref)[0])
     if not use_stop_idx:
         stop_idx = 3
@@ -202,6 +204,7 @@ if run_full:
         plt.tight_layout()
 
         fit_rate_seg_lst.append(fit_rate_seg)
+        flight_time_lst.append(flight_time)
 
     hypothetical = 0.1**(OD_ref-np.array(OD_list))
     print('\nScale factor for OD:')
@@ -231,6 +234,12 @@ if run_full:
     df_out = pd.DataFrame(np.array(fit_rate_seg_lst).T.tolist())
     df_out = pd.concat([pd.DataFrame(t_fine), df_out], axis=1)
     df_out = df_out.to_csv(save_dir + save_csv_file_fit, header=headers)
+
+    # d = {'flight_time_lst': flight_time_lst, 't_min': t_min, 't_max': t_max, 'dt': dt, 'n_shots': n_shots}
+    # dframe = pd.DataFrame(data=d)
+    dframe = [flight_time_lst, t_min, t_max, dt, n_shots]
+    pickle.dump(dframe, open(save_dir+r'\fit_figures\params_eval_loss_dtime{}_order{}-{}_shots{:.0E}_best_fit.pkl'.format(include_deadtime, M_lst[0],
+                                                                                   M_lst[-1], max_lsr_num_ref), 'wb'))
 
     print('Total run time: {} seconds'.format(time.time()-start))
 

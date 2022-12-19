@@ -26,7 +26,7 @@ import pickle
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
 data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV'
-fname = r'\OD20Dev_0_-_2022-12-15_13.34.31_OD2.0.ARSENL'
+fname = r'\OD30Dev_0_-_2022-12-19_17.09.26_OD3.0.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
