@@ -45,7 +45,7 @@ set_max_det = False                          # Set TRUE if data limiter is numbe
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = True  # Set True to include deadtime in noise model
+include_deadtime = False  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 standard_correction = False  # Set TRUE if you want to use the standard deadtime correction inversion ( rho_obs = rho/(1+tau*rho) )
 
@@ -60,7 +60,7 @@ intgrl_N = 10000  # Set number of steps in numerical integration
 # Otherwise set to False if you want to check a single polynomial order.
 single_step_iter = False
 M_max = 21  # Max polynomial complexity to test if iterating
-M_lst = np.arange(4, 11, 1)
+M_lst = np.arange(4, 15, 1)
 
 ########################################################################################################################
 
@@ -71,7 +71,7 @@ t_max = window_bnd[1]
 dt = dt
 t_fine = np.arange(t_min, t_max, dt)
 
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV\netcdf'
+load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV\netcdf'
 save_dir = load_dir + r'/../../../Figures/evaluation_loss'
 files = os.listdir(load_dir)
 
