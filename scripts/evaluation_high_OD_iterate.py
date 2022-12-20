@@ -40,13 +40,14 @@ dt = 25e-12                   # [s] TCSPC resolution
 ### PARAMETERS ###
 window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_lsr_num_ref = int(1e4)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_lsr_num_ref = int(1e6)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_lsr_num_fit = int(1e4)
 max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
 set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = True  # Set True to include deadtime in noise model
+include_deadtime = False  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 standard_correction = False  # Set TRUE if you want to use the standard deadtime correction inversion ( rho_obs = rho/(1+tau*rho) )
 
@@ -80,7 +81,7 @@ OD_list = np.zeros(len(files))
 for i in range(len(files)):
     OD_list[i] = float(files[i][2:4]) / 10
 
-fname_ref = r'\OD23Dev_0_-_2022-12-15_12.35.09_OD2.3.ARSENL.nc'
+fname_ref = r'\OD30Dev_0_-_2022-12-19_17.09.26_OD3.0.ARSENL.nc'
 OD_ref = int(fname_ref[3:5]) / 10
 flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd,
                                                                  max_lsr_num_ref, max_det_num_ref, set_max_det,
@@ -110,7 +111,7 @@ if run_full:
     for k in range(stop_idx):
         fname = r'/' + files[k]
         OD_fit = int(fname[3:5]) / 10
-        max_lsr_num = max_lsr_num_ref
+        max_lsr_num = max_lsr_num_fit
         max_det_num = max_det_num_ref
         flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num, max_det_num,
                                                              set_max_det, exclude_shots)
@@ -215,15 +216,15 @@ if run_full:
     if not set_max_det:
         save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime,
                                                                                 M_lst[0], M_lst[-1],
-                                                                                max_lsr_num_ref)
+                                                                                max_lsr_num_fit)
         save_csv_file_fit = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}_best_fit.csv'.format(include_deadtime,
                                                                                    M_lst[0], M_lst[-1],
-                                                                                   max_lsr_num_ref)
+                                                                                   max_lsr_num_fit)
     else:
         save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0],
-                                                                                M_lst[-1], max_lsr_num_ref)
+                                                                                M_lst[-1], max_lsr_num_fit)
         save_csv_file_fit = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}_best_fit.csv'.format(include_deadtime, M_lst[0],
-                                                                                   M_lst[-1], max_lsr_num_ref)
+                                                                                   M_lst[-1], max_lsr_num_fit)
     headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor', 'Average %-age where Detector was Active']
     df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
                         pd.DataFrame(hypothetical), pd.DataFrame(percent_active_lst)], axis=1)
@@ -245,10 +246,10 @@ if run_full:
 
     if not set_max_det:
         save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.png'.format(include_deadtime, M_lst[0], M_lst[-1],
-                                                                                max_lsr_num_ref)
+                                                                                max_lsr_num_fit)
     else:
         save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}.png'.format(include_deadtime, M_lst[0],
-                                                                                     M_lst[-1], max_lsr_num_ref)
+                                                                                     M_lst[-1], max_lsr_num_fit)
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(OD_list[:stop_idx], eval_final_loss_lst, 'r.')
