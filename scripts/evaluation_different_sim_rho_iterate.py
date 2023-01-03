@@ -46,7 +46,7 @@ set_max_det = False                          # Set TRUE if data limiter is numbe
 deadtime = 25e-9                  # [s] Acquisition deadtime
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = True  # Set True to include deadtime in noise model
+include_deadtime = False  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 use_sim_data = True  # Set TRUE if you want to use simulated data for this run
 
@@ -61,7 +61,7 @@ intgrl_N = 10000  # Set number of steps in numerical integration
 # Otherwise set to False if you want to check a single polynomial order.
 single_step_iter = False
 M_max = 21  # Max polynomial complexity to test if iterating
-M_lst = np.arange(4, 10, 1)
+M_lst = np.arange(4, 15, 1)
 
 ########################################################################################################################
 
@@ -70,8 +70,8 @@ M_lst = np.arange(4, 10, 1)
 
 # Only need to change this file location if using simulated data generated from "generate_sim_data.py"
 load_sim_pkl_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Simulated\Select'
-fname_sim_pkl_ref = r'\1_sim_amp1.0E+06_nshot1.0E+06.pkl'
-infile_ref = open(load_sim_pkl_dir + fname_sim_pkl_ref, 'rb')
+fname_sim_pkl_ref = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\Simulated\sim_amp1.0E+06_nshot1.0E+06.pkl'
+infile_ref = open(fname_sim_pkl_ref, 'rb')
 df = pickle.load(infile_ref)
 infile_ref.close()
 
@@ -121,10 +121,12 @@ else:
 if run_full:
     val_final_loss_lst = []
     eval_final_loss_lst = []
+    rmse_final_lst = []
     C_scale_final = []
     percent_active_lst = []
+    target_amplitude_lst = []
     if not use_stop_idx:
-        stop_idx = 3
+        stop_idx = 1
     else:
         # stop_idx = int(np.where(OD_list == OD_ref)[0])
         stop_idx = len(files)
@@ -148,6 +150,8 @@ if run_full:
         laser_pulse_width = df.laser_pulse_width.data
         window_bnd = df.window_bnd.data
         background = df.background.data
+
+        target_amplitude_lst.append(target_amplitude)
 
         # flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num, max_det_num,
         #                                                      set_max_det, exclude_shots)
@@ -232,7 +236,7 @@ if run_full:
 
         t_fine = np.arange(t_min, t_max, dt)
         true_rho = gen_rho(target_amplitude, t_fine, target_time, laser_pulse_width, background)
-        ax.plot(t_fine, true_rho, '--', label='true arrival rate')
+        ax.plot(t_fine, true_rho, 'r--', label='true arrival rate')
 
         n, bins = np.histogram(flight_time, bins=34)
         binwidth = np.diff(bins)[0]
@@ -243,7 +247,7 @@ if run_full:
         # Arrival rate fit
         t_fine = np.arange(t_min, t_max, dt)
         fit_rate_seg = fit_rate_fine[min_order, :]
-        ax.plot(t_fine, fit_rate_seg, 'r--', label='fitted arrival rate')
+        ax.plot(t_fine, fit_rate_seg, 'b--', label='fitted arrival rate')
         ax.set_title('Arrival Rate Fit: {}'.format(files[k]))
         ax.set_xlabel('time [s]')
         ax.set_ylabel('Photon Arrival Rate [Hz]')
@@ -253,6 +257,10 @@ if run_full:
         plt.legend()
         plt.tight_layout()
 
+        rmse = np.sqrt(np.sum(((fit_rate_seg-true_rho)/true_rho)**2)/len(fit_rate_seg))
+        # rmse = np.sqrt(np.sum((fit_rate_seg - true_rho) ** 2) / np.sum(true_rho**2) / len(fit_rate_seg))
+        rmse_final_lst.append(rmse)
+
     # hypothetical = 0.1**(OD_ref-np.array(OD_list))
     # print('\nScale factor for OD:')
     # for k in range(stop_idx):
@@ -260,34 +268,45 @@ if run_full:
 
     # Save to csv file
     if not set_max_det:
-        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime,
+        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.0E}_use_sim_True.csv'.format(include_deadtime,
                                                                                 M_lst[0], M_lst[-1],
                                                                                 max_lsr_num_ref)
     else:
-        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.0E}.csv'.format(include_deadtime, M_lst[0],
+        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.0E}_use_sim_True.csv'.format(include_deadtime, M_lst[0],
                                                                                 M_lst[-1], max_lsr_num_ref)
-    # headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor', 'Average %-age where Detector was Active']
-    # df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
-    #                     pd.DataFrame(hypothetical), pd.DataFrame(percent_active_lst)], axis=1)
-    # df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
+    headers = ['Target Amplitude', 'RMSE', 'Evaluation Loss', 'Optimal Scaling Factor', 'Average %-age where Detector was Active']
+    df_out = pd.concat([pd.DataFrame(target_amplitude_lst), pd.DataFrame(rmse_final_lst),
+                        pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
+                        pd.DataFrame(percent_active_lst)], axis=1)
+    df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
 
     print('Total run time: {} seconds'.format(time.time()-start))
 
     if not set_max_det:
-        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.png'.format(include_deadtime, M_lst[0], M_lst[-1],
+        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_use_sim_True.png'.format(include_deadtime, M_lst[0], M_lst[-1],
                                                                                 max_lsr_num_ref)
     else:
-        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}.png'.format(include_deadtime, M_lst[0],
+        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}_use_sim_True.png'.format(include_deadtime, M_lst[0],
                                                                                      M_lst[-1], max_lsr_num_ref)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    # ax.plot(OD_list[:stop_idx], eval_final_loss_lst, 'r.')
-    ax.plot(files[:stop_idx], eval_final_loss_lst, 'r.')
-    ax.set_xlabel('OD')
+    ax.plot(target_amplitude_lst[:stop_idx], eval_final_loss_lst, 'r.')
+    ax.set_xlabel('Amplitude Arrival Rate [Hz]')
     ax.set_ylabel('Evaluation loss')
     ax.set_title('Evaluation Loss vs OD')
+    ax.set_xscale('log')
     fig.savefig(save_dir + save_plt_file)
+    time.sleep(2)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(target_amplitude_lst[:stop_idx], rmse_final_lst, 'r.')
+    ax.set_xlabel('Amplitude Arrival Rate [Hz]')
+    ax.set_ylabel('RMSE')
+    ax.set_title('RMSE')
+    ax.set_xscale('log')
+    # fig.savefig(save_dir + save_plt_file)
     time.sleep(2)
     plt.show()
 

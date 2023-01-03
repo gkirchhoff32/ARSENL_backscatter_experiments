@@ -21,6 +21,7 @@ if dirLib not in sys.path:
     sys.path.append(dirLib)
 
 import sim_deadtime_utils as sim
+from load_ARSENL_data import set_binwidth
 
 
 def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_pulse_width, target_time,
@@ -94,17 +95,17 @@ if __name__ == '__main__':
     # simulation resolution settings
     t_sim_min = 0
     t_sim_max = 40e-9
-    dt_sim = 1e-12
+    dt_sim = 25e-12
 
     tD = 25e-9  # deadtime
-    Nshot = int(1e6)  # number of laser shots
+    Nshot = int(1e5)  # number of laser shots
     wrap_deadtime = True  # wrap deadtime between shots
 
     window_bnd = [26e-9, 34e-9]
 
     laser_pulse_width = 500e-12  # laser pulse width in seconds
     target_time = 31.2e-9
-    target_amplitude = 1e6  # target peak count rate
+    target_amplitude = 1.15e8  # target peak count rate
     background = 1e4  # background count rate
 
     serialize = True
@@ -155,18 +156,19 @@ if __name__ == '__main__':
     # Scaled time-of-flight histogram
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    n, bins = np.histogram(flight_time*1e9, bins=30)
+    bin_array = set_binwidth(window_bnd[0], window_bnd[1], dt_sim)
+    n, bins = np.histogram(flight_time, bins=bin_array)
     binwidth = np.diff(bins)[0]
-    N = n / binwidth / 1e-9 / n_shots  # [Hz] Scaling counts to arrival rate
+    N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
     center = 0.5 * (bins[:-1] + bins[1:])
     ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5, label='detected photons')
-    n, bins = np.histogram(true_flight_time*1e9, bins=30)
+    n, bins = np.histogram(true_flight_time, bins=bin_array)
     binwidth = np.diff(bins)[0]
-    N = n / binwidth / 1e-9 / n_shots  # [Hz] Scaling counts to arrival rate
+    N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
     center = 0.5 * (bins[:-1] + bins[1:])
     ax.bar(center, N, align='center', width=binwidth, color='r', alpha=0.5, label='true photons')
     ax.set_title('Arrival Rate Histogram')
-    ax.set_xlabel('time [ns]')
+    ax.set_xlabel('time [s]')
     ax.set_ylabel('Photon Arrival Rate [Hz]')
     plt.legend()
     plt.show()
