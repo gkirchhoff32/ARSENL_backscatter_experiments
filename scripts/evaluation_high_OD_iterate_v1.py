@@ -41,7 +41,7 @@ dt = 25e-12                   # [s] TCSPC resolution
 window_bnd = [27.5e-9, 33.5e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
 max_lsr_num_ref = int(5e5)                   # If set_max_det set to FALSE, include up to certain number of laser shots
-max_lsr_num_fit = int(3.75e3)
+max_lsr_num_fit = int(1e5)
 max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
 set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
 deadtime = 29.1e-9                  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
@@ -73,7 +73,7 @@ t_max = window_bnd[1]
 dt = dt
 t_fine = np.arange(t_min, t_max, dt)
 
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.01.30\netcdf'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.01.31\netcdf'
 save_dir = load_dir + r'/../../evaluation_loss'
 files = os.listdir(load_dir)
 
@@ -81,7 +81,7 @@ OD_list = np.zeros(len(files))
 for i in range(len(files)):
     OD_list[i] = float(files[i][2:4]) / 10
 
-fname_ref = r'\OD43_Dev_0_-_2023-01-30_15.22.21_OD4.3.ARSENL.nc'
+fname_ref = r'\OD50_Dev_0_-_2023-01-31_16.43.48_OD5.0.ARSENL.nc'
 OD_ref = int(fname_ref[3:5]) / 10
 flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd,
                                                                  max_lsr_num_ref, max_det_num_ref, set_max_det,

@@ -23,12 +23,13 @@ import time
 import pickle
 
 # Path settings
-# TODO: Put this in yaml config file
+# NOTE: User should check these settings when running "load_ARSENL_data.py" or "plot_histogram.py"
 cwd = os.getcwd()
 data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.01.31'
 fname = r'\OD50_Dev_0_-_2023-01-31_16.43.48_OD5.0.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
+
 
 def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
     """
@@ -60,7 +61,6 @@ def load_xarray_dataset(data_dir, fname):
 def set_binwidth(tmin, tmax, resolution):
     bin_array = np.arange(tmin, tmax+resolution, resolution)
     return bin_array
-
 
 
 if __name__ == "__main__":

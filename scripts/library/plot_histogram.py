@@ -12,12 +12,10 @@ Histogram photon arrival time data from ARSENL INPHAMIS lidar. IMPORTANT: Set da
 """
 
 import numpy as np
-import pandas as pd
 import time
 import pickle
 import matplotlib.pyplot as plt
 
-start = time.time()
 from load_ARSENL_data import load_INPHAMIS_data, set_binwidth, data_dir, fname, picklename
 
 start = time.time()
@@ -25,9 +23,8 @@ start = time.time()
 c = 299792458  # [m/s] Speed of light
 
 # Parameters
-create_csv = 0  # Set true to generate a .csv from .ARSENL data
-load_data = True  # Set true to load data into a DataFrame and serialize into a pickle object
-irregular_data = False  # Set true if data has gaps (i.e., dtime is 0 for many clock cycles)
+create_csv = False  # Set TRUE to generate a .csv from .ARSENL data
+load_data = True  # Set TRUE to load data into a DataFrame and serialize into a pickle object
 exclude = [27500, 33500]  # [ps] Set temporal boundaries for binning
 
 # Load INPHAMIS .ARSENL data if not yet serialized
@@ -46,10 +43,6 @@ n_shots = len(sync)
 
 sync_detect_idx = np.array(detect.index) - 1  # Extract index immediately prior to detection event to match with laser pulse
 sync_detect = df.loc[sync_detect_idx]  # Laser pulse event prior to detection event
-# If data has gaps: Ignore data where a detection event immediately follows a data gap
-if irregular_data:
-    sync_detect = sync_detect.loc[sync_detect['dtime'] != 0]
-    detect = df1.loc[np.array(sync_detect.index + 1)]
 
 detect_time = detect['dtime'].to_numpy()
 sync_detect_time = sync_detect['dtime'].to_numpy()
