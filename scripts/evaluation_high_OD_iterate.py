@@ -38,16 +38,16 @@ dt = 25e-12                   # [s] TCSPC resolution
 
 # EDIT THESE PARAMETERS BEFORE RUNNING!
 ### PARAMETERS ###
-window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
+window_bnd = [27.5e-9, 33.5e-9]       # [s] Set boundaries for binning to exclude outliers
 exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_lsr_num_ref = int(1e6)                   # If set_max_det set to FALSE, include up to certain number of laser shots
+max_lsr_num_ref = int(5e5)                   # If set_max_det set to FALSE, include up to certain number of laser shots
 max_lsr_num_fit = int(3.75e3)
 max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
 set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
-deadtime = 25e-9                  # [s] Acquisition deadtime
+deadtime = 29.1e-9                  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
 use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
 run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
-include_deadtime = False  # Set True to include deadtime in noise model
+include_deadtime = True  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 standard_correction = False  # Set TRUE if you want to use the standard deadtime correction inversion ( rho_obs = rho/(1+tau*rho) )
 
@@ -73,15 +73,15 @@ t_max = window_bnd[1]
 dt = dt
 t_fine = np.arange(t_min, t_max, dt)
 
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\2022-12-15 Different OD CFD Input -15mV\netcdf'
-save_dir = load_dir + r'/../../../Figures/evaluation_loss'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.01.30\netcdf'
+save_dir = load_dir + r'/../../evaluation_loss'
 files = os.listdir(load_dir)
 
 OD_list = np.zeros(len(files))
 for i in range(len(files)):
     OD_list[i] = float(files[i][2:4]) / 10
 
-fname_ref = r'\OD30Dev_0_-_2022-12-19_17.09.26_OD3.0.ARSENL.nc'
+fname_ref = r'\OD43_Dev_0_-_2023-01-30_15.22.21_OD4.3.ARSENL.nc'
 OD_ref = int(fname_ref[3:5]) / 10
 flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd,
                                                                  max_lsr_num_ref, max_det_num_ref, set_max_det,
@@ -221,10 +221,10 @@ if run_full:
                                                                                    M_lst[0], M_lst[-1],
                                                                                    max_lsr_num_fit)
     else:
-        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.csv'.format(include_deadtime, M_lst[0],
-                                                                                M_lst[-1], max_lsr_num_fit)
-        save_csv_file_fit = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}_best_fit.csv'.format(include_deadtime, M_lst[0],
-                                                                                   M_lst[-1], max_lsr_num_fit)
+        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_lsr_shots{:.2E}.csv'.format(include_deadtime, M_lst[0],
+                                                                                M_lst[-1], max_lsr_num_ref, max_lsr_num_fit)
+        save_csv_file_fit = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_lsr_shots{:.2E}_best_fit.csv'.format(include_deadtime, M_lst[0],
+                                                                                   M_lst[-1], max_lsr_num_ref, max_lsr_num_fit)
     headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor', 'Average %-age where Detector was Active']
     df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
                         pd.DataFrame(hypothetical), pd.DataFrame(percent_active_lst)], axis=1)
@@ -239,14 +239,14 @@ if run_full:
     # d = {'flight_time_lst': flight_time_lst, 't_min': t_min, 't_max': t_max, 'dt': dt, 'n_shots': n_shots}
     # dframe = pd.DataFrame(data=d)
     dframe = [flight_time_lst, t_min, t_max, dt, n_shots]
-    pickle.dump(dframe, open(save_dir+r'\fit_figures\params_eval_loss_dtime{}_order{}-{}_shots{:.0E}_best_fit.pkl'.format(include_deadtime, M_lst[0],
-                                                                                   M_lst[-1], max_lsr_num_ref), 'wb'))
+    pickle.dump(dframe, open(save_dir+r'\fit_figures\params_eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_lsr_shots{:.2E}_best_fit.pkl'.format(include_deadtime, M_lst[0],
+                                                                                   M_lst[-1], max_lsr_num_ref, max_lsr_num_fit), 'wb'))
 
     print('Total run time: {} seconds'.format(time.time()-start))
 
     if not set_max_det:
-        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.png'.format(include_deadtime, M_lst[0], M_lst[-1],
-                                                                                max_lsr_num_fit)
+        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_lsr_shots{:.2E}.png'.format(include_deadtime, M_lst[0], M_lst[-1],
+                                                                                max_lsr_num_ref, max_lsr_num_fit)
     else:
         save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}.png'.format(include_deadtime, M_lst[0],
                                                                                      M_lst[-1], max_lsr_num_fit)

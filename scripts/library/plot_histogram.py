@@ -28,7 +28,7 @@ c = 299792458  # [m/s] Speed of light
 create_csv = 0  # Set true to generate a .csv from .ARSENL data
 load_data = True  # Set true to load data into a DataFrame and serialize into a pickle object
 irregular_data = False  # Set true if data has gaps (i.e., dtime is 0 for many clock cycles)
-exclude = [27500, 32500]  # [ps] Set temporal boundaries for binning
+exclude = [27500, 33500]  # [ps] Set temporal boundaries for binning
 
 # Load INPHAMIS .ARSENL data if not yet serialized
 if load_data:

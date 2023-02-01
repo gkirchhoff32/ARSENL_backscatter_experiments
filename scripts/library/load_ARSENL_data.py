@@ -25,8 +25,8 @@ import pickle
 # Path settings
 # TODO: Put this in yaml config file
 cwd = os.getcwd()
-data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.01.30'
-fname = r'\Dev_0_-_2023-01-30_15.22.21_OD4.3.ARSENL'
+data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.01.31'
+fname = r'\OD50_Dev_0_-_2023-01-31_16.43.48_OD5.0.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
