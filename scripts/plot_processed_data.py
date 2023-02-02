@@ -18,7 +18,6 @@ dirLib = cwd + r'/library'
 if dirLib not in sys.path:
     sys.path.append(dirLib)
 
-# from evaluation_high_OD_iterate import flight_time_lst, t_min, t_max, dt, n_shots
 from load_ARSENL_data import set_binwidth
 
 ### NOTE!!! Make sure to check filepaths for appropriate and MATCHING files for plotting.

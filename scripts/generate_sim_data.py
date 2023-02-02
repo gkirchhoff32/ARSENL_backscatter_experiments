@@ -7,7 +7,7 @@ Script to generate simulated retrievals and output data products that can be use
 routine (e.g., evaluation_high_OD_iterate.py)
 """
 
-import os,sys
+import os, sys
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -64,10 +64,7 @@ def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_
     t_det_last = -100.0  # last photon detection event
     for n in range(Nshot):
         # simulate a laser shot
-        ptime, ctime = sim.photon_count_generator(t_sim_bins,
-                                                  photon_rate_arr,
-                                                  tau_d_flt=tD,
-                                                  last_photon_flt=t_det_last)
+        ptime, ctime = sim.photon_count_generator(t_sim_bins, photon_rate_arr, tau_d_flt=tD, last_photon_flt=t_det_last)
         if wrap_deadtime:
             if len(ctime) > 0:
                 t_det_last = ctime[-1]
@@ -101,14 +98,14 @@ if __name__ == '__main__':
     Nshot = int(1e5)  # number of laser shots
     wrap_deadtime = True  # wrap deadtime between shots
 
-    window_bnd = [26e-9, 34e-9]
+    window_bnd = [26e-9, 34e-9]  # time-of-flight bounds
 
     laser_pulse_width = 500e-12  # laser pulse width in seconds
-    target_time = 31.2e-9
+    target_time = 31.2e-9  # target location in time
     target_amplitude = 1.15e8  # target peak count rate
     background = 1e4  # background count rate
 
-    serialize = True
+    serialize = True  # Set TRUE to serialize output as a pickle object
 
 
     ### GENERATE SIMULATED DATA ###
@@ -142,16 +139,6 @@ if __name__ == '__main__':
         outfile = open(save_dir+fname_pkl, 'wb')
         pickle.dump(processed_data, outfile)
         outfile.close()
-
-    # phot_arr = np.array(sorted(np.concatenate(t_phot_lst)))
-    # plt.figure()
-    # plt.stem(phot_arr, np.ones(phot_arr.size))
-    # plt.title('Photons')
-    # 
-    # cnt_arr = np.array(sorted(np.concatenate(t_det_lst)))
-    # plt.figure()
-    # plt.stem(cnt_arr, np.ones(cnt_arr.size))
-    # plt.title('Detected Photons')
 
     # Scaled time-of-flight histogram
     fig = plt.figure()

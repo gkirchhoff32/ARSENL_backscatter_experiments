@@ -1,7 +1,9 @@
-# Methods for 'fit_histogram_polynomial_complexity_iteration.ipynb'.
+# fit_polynomial_utils.py
+#
+# Methods for deadtime evaluation scripts.
 #
 # Grant Kirchhoff
-# Last Updated: 09/20/2022
+# Last Updated: 02/02/2023
 
 import torch
 import numpy as np
@@ -122,20 +124,19 @@ def cheby_poly(x, M):
 
     return model_out
 
-# Deadtime noise model
-# Adjust bin ratios depending on reduced bin availability due to deadtime.
+# Deadtime Noise Model
 #
-# This is done because deadtime reduces available bins following a detection event.
-# To accomodate for this, in the loss function the impact each time bin has on the
-# numerical integration is proportionally reduced to how long it was active (i.e.,
-# unaffected by deadtime).
+# Adjust bin ratios depending on reduced bin availability due to deadtime. This is done because deadtime reduces
+# available bins following a detection event. To accommodate for this, in the loss function the impact each time bin has
+# on the numerical integration is proportionally reduced to how long it was active (i.e., unaffected by deadtime).
+# Please refer to Willem Marais's and/or Matt Hayman's notes on this subject.
 
 def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots):
     """
     Deadtime adjustment for arrival rate estimate in optimizer.
     Parameters:
-    t_min: Window lower bound \\ float
-    t_max: Window upper bound \\ float
+    t_min: Window lower bound \\ float [s]
+    t_max: Window upper bound \\ float [s]
     intgrl_N (int): Number of bins in integral \\ int
     deadtime: Deadtime interval [sec] \\ float
     t_det_lst (list): Nested list of arrays, where each array contains the detections per laser shot
@@ -144,7 +145,7 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots):
     """
 
     # Initialize
-    bin_edges, dt = np.linspace(t_min, t_max, intgrl_N + 1, endpoint=False, retstep=True)
+    bin_edges, dt = np.linspace(t_min, t_max, intgrl_N+1, endpoint=False, retstep=True)
     active_ratio_hst = n_shots * np.ones(len(bin_edges)-1)
     deadtime_n_bins = np.floor(deadtime / dt).astype(int)  # Number of bins that deadtime occupies
 
@@ -176,9 +177,11 @@ def deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst, n_shots):
 
 def generate_fit_val_eval(data, data_ref, t_det_lst, n_shots, n_shots_ref):
     """
-    Generates fit, validation, and evaluation data sets for the fitting routine. Recall (1) Fit set: Dataset used to
-    generate the fit; (2) Validation set: Independent dataset used to calculate validation loss; and (3) Evaluation set:
-    High fidelity set (e.g., unaffected by deadtime, high OD setting) that is used to calculate evaluation loss.
+    Generates fit, validation, and evaluation data sets for the fitting routine. For reference - (1) Fit set: Dataset
+    used to generate the fit; (2) Validation set: Independent dataset used to calculate validation loss; and (3)
+    Evaluation set: High-fidelity set (e.g., unaffected by deadtime, high-OD setting) that is used to calculate
+    evaluation loss.
+
     :param data: (Nx1) Data used for calculating fit and validation loss
     :param data_ref: (Mx1) Reference data used for calculating evaluation loss
     :param n_shots: (int) Number of laser shots for "data"
@@ -191,7 +194,7 @@ def generate_fit_val_eval(data, data_ref, t_det_lst, n_shots, n_shots_ref):
     :return: n_shots_eval: Number of laser shots for evaluation set
     """
 
-    # The target is assumed to be stationary, so I can split the data into halves
+    # The target is assumed to be stationary, so I can split the data into halves. Proof: Poisson thinning.
     split_value = int(len(data) // 2)
     t_phot_fit = data[:split_value]
     t_phot_val = data[split_value:]
@@ -214,10 +217,10 @@ def generate_fit_val_eval(data, data_ref, t_det_lst, n_shots, n_shots_ref):
     return t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, t_det_lst_fit, t_det_lst_val, n_shots_fit, n_shots_val, n_shots_eval
 
 
+# Generate fit routine
 def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, active_ratio_hst_fit,
                 active_ratio_hst_val, active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval, learning_rate=1e-1,
-                rel_step_lim=1e-8, intgrl_N=10000, max_epochs=400, term_persist=20, standard_correction=False,
-                deadtime=25e-9):
+                rel_step_lim=1e-8, intgrl_N=10000, max_epochs=400, term_persist=20):
 
     t_min, t_max = t_fine[0], t_fine[-1]
 
@@ -258,7 +261,6 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         while rel_step > rel_step_lim and epoch < max_epochs:
             fit_model.train()
             pred_fit, integral_fit = fit_model(intgrl_N, active_ratio_hst_fit, t_fit_norm, t_intgrl, cheby=True)
-            # TODO: if using standard deadtime correction "inversion," then 'pred_fit' and 'integral_fit' need to be changed.
             loss_fit = loss_fn(pred_fit, integral_fit * n_shots_fit)  # add regularization here
             fit_loss_lst += [loss_fit.item()]
 

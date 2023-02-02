@@ -51,15 +51,6 @@ flight_time = (detect_time - sync_detect_time) * 25  # [ps] Time is in segments 
 flight_time = flight_time[np.where((flight_time >= exclude[0]) & (flight_time < exclude[1]))]  # Exclude t.o.f. where bins ~= 0
 distance = flight_time / 1e12 * c / 2
 
-### Plot time of flight as a function of laser shot ###
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# ax1.plot(flight_time, 'g.')
-# ax1.set_xlabel('Laser pulse')
-# ax1.set_ylabel('Time of flight [ps]')
-# ax1.set_title('Time of flight per laser shot')
-# plt.show()
-
 ### Histogram of time of flight ###
 fig = plt.figure()
 ax1 = fig.add_subplot(111)

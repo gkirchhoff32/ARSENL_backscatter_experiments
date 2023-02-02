@@ -27,25 +27,23 @@ dirLib = cwd + r'/library'
 if dirLib not in sys.path:
     sys.path.append(dirLib)
 
-import fit_polynomial_methods as fit
+import fit_polynomial_utils as fit
 import data_organize as dorg
 
 ########################################################################################################################
 
 ### CONSTANTS ####
-c = 2.99792458e8                      # [m/s] Speed of light
-dt = 25e-12                   # [s] TCSPC resolution
+c = 2.99792458e8  # [m/s] Speed of light
+dt = 25e-12  # [s] TCSPC resolution
 
 # EDIT THESE PARAMETERS BEFORE RUNNING!
 ### PARAMETERS ###
-window_bnd = [30e-9, 33e-9]       # [s] Set boundaries for binning to exclude outliers
-exclude_shots = True                     # Set TRUE to exclude data to work with smaller dataset
-max_lsr_num_ref = int(1e6)                   # If set_max_det set to FALSE, include up to certain number of laser shots
-max_det_num_ref = 2000                       # If set_max_det set to TRUE, include up to a certain number of detections
-set_max_det = False                          # Set TRUE if data limiter is number of detections instead of laser shots.
-deadtime = 25e-9                  # [s] Acquisition deadtime
-use_stop_idx = True               # Set TRUE if you want to use up to the OD value preceding the reference OD
-run_full = True                   # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
+window_bnd = [30e-9, 33e-9]  # [s] Set boundaries for binning to exclude outliers
+exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset
+max_lsr_num_ref = int(1e6)  # Number of laser shots used for reference dataset.
+deadtime = 25e-9  # [s] Acquisition deadtime
+use_stop_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
+run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data.
 include_deadtime = False  # Set True to include deadtime in noise model
 use_poisson_eval = True  # Set TRUE if you want to use the Poisson model for the evaluation loss
 use_sim_data = True  # Set TRUE if you want to use simulated data for this run
@@ -134,7 +132,6 @@ if run_full:
         fname_sim_pkl = r'/' + files[k]
         # OD_fit = int(fname[3:5]) / 10
         max_lsr_num = max_lsr_num_ref
-        max_det_num = max_det_num_ref
 
         infile = open(load_sim_pkl_dir + fname_sim_pkl, 'rb')
         df = pickle.load(infile)
@@ -267,13 +264,9 @@ if run_full:
     #     print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], hypothetical[k]))
 
     # Save to csv file
-    if not set_max_det:
-        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.0E}_use_sim_True.csv'.format(include_deadtime,
+    save_csv_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.0E}_use_sim_True.csv'.format(include_deadtime,
                                                                                 M_lst[0], M_lst[-1],
                                                                                 max_lsr_num_ref)
-    else:
-        save_csv_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.0E}_use_sim_True.csv'.format(include_deadtime, M_lst[0],
-                                                                                M_lst[-1], max_lsr_num_ref)
     headers = ['Target Amplitude', 'RMSE', 'Evaluation Loss', 'Optimal Scaling Factor', 'Average %-age where Detector was Active']
     df_out = pd.concat([pd.DataFrame(target_amplitude_lst), pd.DataFrame(rmse_final_lst),
                         pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
@@ -282,12 +275,8 @@ if run_full:
 
     print('Total run time: {} seconds'.format(time.time()-start))
 
-    if not set_max_det:
-        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_use_sim_True.png'.format(include_deadtime, M_lst[0], M_lst[-1],
+    save_plt_file = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_use_sim_True.png'.format(include_deadtime, M_lst[0], M_lst[-1],
                                                                                 max_lsr_num_ref)
-    else:
-        save_plt_file = r'\eval_loss_dtime{}_order{}-{}_detections{:.2E}_use_sim_True.png'.format(include_deadtime, M_lst[0],
-                                                                                     M_lst[-1], max_lsr_num_ref)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)

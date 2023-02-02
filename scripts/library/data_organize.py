@@ -7,7 +7,7 @@
 import numpy as np
 import xarray as xr
 
-def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, max_det_num=1000, set_max_det=False, exclude_shots=True):
+def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, exclude_shots=True):
     '''
     Some bookkeeping. Organizes data into structures and variables required for the fit routine.
     :param dt: (float) Temporal resolution [s]
@@ -26,43 +26,35 @@ def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, max_det_num=1000
     # Load and organize xarray dataset
     ds = xr.open_dataset(data_dir + fname)
 
+    # Generate flight time values, sync counts, and sync counter values for each time tag
     cnts = ds.time_tag
-    flight_time = cnts * dt  # [s] Convert "time tags" from clock counts to actual timed tags
-    flight_time = flight_time[np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]  # Exclude specified t.o.f. bins
-
+    flight_time = cnts * dt  # [s]
+    # Exclude specified t.o.f. bins
+    flight_time = flight_time[np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]
     lsr_shot_cntr = ds.sync_index.to_numpy()
     ttag_sync_idx = ds.time_tag_sync_index.values
 
-    if not set_max_det:
-        if exclude_shots:
-            excl_sync = ds.sync_index[max_lsr_num].item()
-            excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
-            if excl_ttag_idx.size == 0:
-                nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
-                print(
-                    "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
-                        nearest))
-                excl_sync = ds.sync_index[nearest].item()
-                excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0][0]
-                lsr_shot_cntr = lsr_shot_cntr[0:nearest]
-            else:
-                excl_ttag_idx = excl_ttag_idx[0]
-                lsr_shot_cntr = lsr_shot_cntr[0:max_lsr_num]
-
-            flight_time = flight_time[0:excl_ttag_idx]
-            n_shots = len(lsr_shot_cntr)
+    if exclude_shots:
+        # Obtain sync index corresponding to maximum laser shot number specified by user. If the exact index doesn't
+        # have a corresponding detection, then the nearest shot with a detection is chosen.
+        excl_sync = ds.sync_index[max_lsr_num].item()
+        excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
+        if excl_ttag_idx.size == 0:
+            nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
+            print(
+                "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
+                    nearest))
+            excl_sync = ds.sync_index[nearest].item()
+            excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0][0]
+            lsr_shot_cntr = lsr_shot_cntr[0:nearest]
         else:
-            n_shots = len(ds.sync_index)
+            excl_ttag_idx = excl_ttag_idx[0]
+            lsr_shot_cntr = lsr_shot_cntr[0:max_lsr_num]
+
+        flight_time = flight_time[0:excl_ttag_idx]
+        n_shots = len(lsr_shot_cntr)
     else:
-        if exclude_shots:
-            excl_ttag_idx = max_det_num
-            excl_sync_idx = np.where(ds.sync_index.values == ttag_sync_idx[excl_ttag_idx])[0][0]
-            lsr_shot_cntr = lsr_shot_cntr[0:excl_sync_idx]
-            flight_time = flight_time[0:excl_ttag_idx]
-            n_shots = len(lsr_shot_cntr)
-        else:
-            n_shots = len(ds.sync_index)
-
+        n_shots = len(ds.sync_index)
 
     # Generate nested list of DataArrays, where each array consists of the detections per laser shot
     t_det_lst = []
