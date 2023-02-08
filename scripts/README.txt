@@ -12,7 +12,7 @@ This is a guide to the code repository for Grant Kirchhoff's Deadtime Evaluation
 
 2) Running the deadtime vs. Poisson model evaluation script
 
-	"evaluation_high_OD_iterate_v2.py"
+	"evaluation_high_OD_iterate_vX.py"
 
 	(A) When running the evaluation script, make sure that you are using netcdf data that has been generated via Matt Hayman's conversion code: "convert_timetag_csv". This is a critical step so make sure you have used "convert_timetag_csv" to generate the files. Contact Grant and/or Matt for access if this is not familiar to you or you do not have access yet. The file name should terminate with ".nc".
 
@@ -24,3 +24,12 @@ This is a guide to the code repository for Grant Kirchhoff's Deadtime Evaluation
 
 	(E) Once running, the script will loop through each file of datasets with different OD values, choose the optimal fit for each profile, then evaluate the fit against a high-fidelity dataset (i.e., minimal deadtime impact) (e.g., high-OD retrieval). The script will save relevant outputs (e.g., OD values, forward model, time vector) that can be used in future processing and are used in scripts like "plot_eval_loss.ipynb", for example.
 
+	(F) To compare deadtime vs. Poisson model, make sure to run this whole sequence twice. The first with the 'include_deadtime' variable set to 'True' (deadtime model) and the second with it set to 'False' (Poisson model).
+
+(3) Plotting evaluation loss results
+
+	"plot_eval_loss.ipynb"
+
+	(A) Make sure you can run iPython notebooks (e.g., Jupyter). Set 'load_dir' variable to directory path. This should be the same as the 'save_dir' variable path in "evaluation_high_OD_iterate_vX" you set. If you ran "evaluation_high_OD_iterate_vX" twice (for the Poisson and the deadtime models) then you should set the file names for their outputs as the 'df_dtime' and 'df_pois' variables e.g., 'eval_loss_dtimeTrue_order4-14_shots1.00E+05.csv' and 'eval_loss_dtimeFalse_order4-14_shots1.00E+05.csv'.
+
+	(B) Run cells to generate plots.

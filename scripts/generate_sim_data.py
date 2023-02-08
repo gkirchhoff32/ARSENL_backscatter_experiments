@@ -26,25 +26,27 @@ from load_ARSENL_data import set_binwidth
 
 def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_pulse_width, target_time,
                  target_amplitude, background):
+    """
+    Using Matthew Hayman's 'photon_count_generator' method in 'sim_deadtime_utils', generate simulated data with
+    and without deadtime effects.
+    :param t_sim_max: (float) maximum time for each laser shot [s]
+    :param dt_sim: (float) resolution settings [s]
+    :param tD: (float) deadtime [s]
+    :param Nshot: (int) number of laser shots
+    :param wrap_deadtime: (bool) set TRUE to wrap deadtime into next shot if detection is close to 't_sim_max'
+    :param window_bnd: (1x2 float list) time bounds on simulation [s]
+    :param laser_pulse_width: laser pulse width (Gaussian) [s]
+    :param target_time: target location in time [s]
+    :param target_amplitude: target amplitude peak count rate [Hz]
+    :param background: background count rate [Hz]
+    :return: flight_time, true_flight_time, n_shots, t_det_lst, t_phot_lst
+    """
     ##### GENERATE SIMULATED DATA #####
 
     # simulation resolution settings
     t_sim_min = 0
-    t_sim_max = t_sim_max
-    dt_sim = dt_sim
-
-    tD = tD  # deadtime
     if type(Nshot) != int:
         Nshot = int(Nshot)  # number of laser shots
-    wrap_deadtime = wrap_deadtime  # wrap deadtime between shots
-
-    window_bnd = window_bnd
-
-    # Target parameters (Gaussian convolved w/ Gaussian)
-    laser_pulse_width = laser_pulse_width # laser pulse width in seconds
-    target_time = target_time
-    target_amplitude = target_amplitude  # target peak count rate
-    background = background  # background count rate
 
     # generate the simulated scene time axis
     t_sim = np.arange(t_sim_min, t_sim_max, dt_sim)           # simulation time
@@ -90,20 +92,20 @@ if __name__ == '__main__':
     ### PARAMETERS ###
 
     # simulation resolution settings
-    t_sim_min = 0
-    t_sim_max = 40e-9
-    dt_sim = 25e-12
+    t_sim_min = 0  # [s]
+    t_sim_max = 40e-9  # [s]
+    dt_sim = 25e-12  # [s]
 
-    tD = 25e-9  # deadtime
+    tD = 25e-9  # [s] deadtime
     Nshot = int(1e5)  # number of laser shots
     wrap_deadtime = True  # wrap deadtime between shots
 
-    window_bnd = [26e-9, 34e-9]  # time-of-flight bounds
+    window_bnd = [26e-9, 34e-9]  # [s] time-of-flight bounds
 
-    laser_pulse_width = 500e-12  # laser pulse width in seconds
-    target_time = 31.2e-9  # target location in time
-    target_amplitude = 1.15e8  # target peak count rate
-    background = 1e4  # background count rate
+    laser_pulse_width = 500e-12  # [s] laser pulse width
+    target_time = 31.2e-9  # [s] target location in time
+    target_amplitude = 1.15e8  # [Hz] target peak count rate
+    background = 1e4  # [Hz] background count rate
 
     serialize = True  # Set TRUE to serialize output as a pickle object
 
