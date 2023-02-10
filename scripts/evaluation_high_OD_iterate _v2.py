@@ -39,10 +39,10 @@ c = 2.99792458e8  # [m/s] Speed of light
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit/ref' variables)
 max_lsr_num_ref = int(3.3e6)  # Maximum number of laser shots for the reference dataset
 max_lsr_num_fit = int(1e4)  # Maximum number of laser shots for the fit dataset
-use_stop_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
-stop_idx = 3  # If 'use_stop_idx' FALSE, set the max idx value to this value (for troubleshooting purposes)
+use_final_idx = False  # Set TRUE if you want to use up to the OD value preceding the reference OD
+stop_idx = 10  # If 'use_final_idx' FALSE, set the max idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = True    # Set True to include deadtime in noise model
+include_deadtime = False    # Set True to include deadtime in noise model
 
 window_bnd = [27.5e-9, 33.5e-9]  # [s] Set boundaries for binning to exclude outliers
 deadtime = 29.1e-9  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
@@ -56,8 +56,8 @@ term_persist = 20  # relative step size averaging interval in iterations
 intgrl_N = 10000  # Set number of steps in numerical integration
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
-M_min = 4
-M_max = 17
+M_min = 8
+M_max = 22
 step = 2
 M_lst = np.arange(M_min, M_max, step)
 
@@ -114,10 +114,9 @@ if run_full:
     percent_active_lst = []
     fit_rate_seg_lst = []
     flight_time_lst = []
+    active_ratio_hst_lst = []
 
-    if not use_stop_idx:
-        stop_idx = 3
-    else:
+    if use_final_idx:
         stop_idx = int(np.where(OD_list == OD_ref)[0])
 
     for k in range(stop_idx):
@@ -130,9 +129,9 @@ if run_full:
         print('Number of laser shots: {}'.format(n_shots))
 
         try:
-            t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,\
-                t_det_lst_fit, t_det_lst_val, n_shots_fit, \
-                    n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, t_det_lst, n_shots, n_shots_ref)
+            t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, \
+            t_det_lst_fit, t_det_lst_val, n_shots_fit, \
+            n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, t_det_lst, n_shots, n_shots_ref)
         except:
             ZeroDivisionError
             print('ERROR: Insufficient laser shots... increase the "max_lsr_num_fit" parameter.')
@@ -150,11 +149,11 @@ if run_full:
 
         # Run fit optimizer
         ax, val_loss_arr, eval_loss_arr, \
-            fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
-                                                                  t_phot_eval_tnsr, active_ratio_hst_fit,
-                                                                  active_ratio_hst_val, active_ratio_hst_ref,
-                                                                  n_shots_fit, n_shots_val, n_shots_eval, learning_rate,
-                                                                  rel_step_lim, intgrl_N, max_epochs, term_persist)
+        fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
+                                                              t_phot_eval_tnsr, active_ratio_hst_fit,
+                                                              active_ratio_hst_val, active_ratio_hst_ref,
+                                                              n_shots_fit, n_shots_val, n_shots_eval, learning_rate,
+                                                              rel_step_lim, intgrl_N, max_epochs, term_persist)
 
         ax.set_ylabel('Loss')
         ax.set_xlabel('Iterations')
@@ -208,6 +207,7 @@ if run_full:
 
         fit_rate_seg_lst.append(fit_rate_seg)
         flight_time_lst.append(flight_time)
+        active_ratio_hst_lst.append(active_ratio_hst_fit)
 
     hypothetical = 0.1**(OD_ref-np.array(OD_list))
     print('\nScale factor for OD:')
@@ -227,7 +227,7 @@ if run_full:
     df_out = pd.concat([pd.DataFrame(t_fine), df_out], axis=1)
     df_out = df_out.to_csv(save_dir + save_csv_file_fit, header=headers)
 
-    dframe = [flight_time_lst, t_min, t_max, dt, n_shots]
+    dframe = [flight_time_lst, t_min, t_max, dt, n_shots, active_ratio_hst_lst]
     pickle.dump(dframe, open(save_dir+save_dframe_fname, 'wb'))
 
     print('Total run time: {} seconds'.format(time.time()-start))
