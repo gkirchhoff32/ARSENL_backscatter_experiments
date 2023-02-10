@@ -37,12 +37,12 @@ c = 2.99792458e8  # [m/s] Speed of light
 # EDIT THESE PARAMETERS BEFORE RUNNING!
 ### PARAMETERS ###
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit/ref' variables)
-max_lsr_num_ref = int(5e5)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(1e3)  # Maximum number of laser shots for the fit dataset
+max_lsr_num_ref = int(3.3e6)  # Maximum number of laser shots for the reference dataset
+max_lsr_num_fit = int(1e4)  # Maximum number of laser shots for the fit dataset
 use_stop_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
 stop_idx = 3  # If 'use_stop_idx' FALSE, set the max idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = False  # Set True to include deadtime in noise model
+include_deadtime = True    # Set True to include deadtime in noise model
 
 window_bnd = [27.5e-9, 33.5e-9]  # [s] Set boundaries for binning to exclude outliers
 deadtime = 29.1e-9  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
@@ -57,14 +57,14 @@ intgrl_N = 10000  # Set number of steps in numerical integration
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 4
-M_max = 15
-step = 1
+M_max = 17
+step = 2
 M_lst = np.arange(M_min, M_max, step)
 
 ### PATH VARIABLES ###
 load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.02.06\netcdf'  # Where the data is loaded from
 save_dir = load_dir + r'/../../evaluation_loss'  # Where the evaluation loss outputs will be saved
-fname_ref = r'\OD38_Dev_0_-_2023-02-06_17.51.44_OD3.8.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
+fname_ref = r'\OD50_Dev_0_-_2023-02-08_11.22.38_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
 # Save file name for important outputs (to csv and pickle object). These are used by scripts like "plot_eval_loss.ipynb"
 save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.csv'.format(include_deadtime, M_min, M_max-1,
