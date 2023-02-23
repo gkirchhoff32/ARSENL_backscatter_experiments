@@ -24,6 +24,10 @@ import sim_deadtime_utils as sim
 from load_ARSENL_data import set_binwidth
 
 
+def gen_rho(A, x, mu, sig, bg):
+    # Generate Gaussian profile
+    return A*np.exp(-1*(x-mu)**2/2/sig**2) + bg
+
 def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_pulse_width, target_time,
                  target_amplitude, background):
     """
@@ -54,7 +58,8 @@ def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_
 
     # generate the photon arrival rate of the profile
     # Gaussian target with constant background
-    photon_rate_arr = target_amplitude*np.exp(-(t_sim - target_time)**2/(2*laser_pulse_width**2))+background
+    # photon_rate_arr = target_amplitude*np.exp(-(t_sim - target_time)**2/(2*laser_pulse_width**2))+background
+    photon_rate_arr = gen_rho(target_amplitude, t_sim, target_time, laser_pulse_width, background)
 
     # generate photon counts
 
@@ -62,6 +67,11 @@ def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_
     start = time.time()
     t_det_lst = []  # detected photons (includes deadtime)
     t_phot_lst = []  # actual photons (no dead time)
+    sync_idx = np.arange(Nshot)  # sync value
+    det_sync_idx = []
+    phot_sync_idx = []
+    det_events = []
+    phot_events = []
 
     t_det_last = -100.0  # last photon detection event
     for n in range(Nshot):
@@ -72,22 +82,38 @@ def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_
                 t_det_last = ctime[-1]
             t_det_last -= t_sim_bins[-1]
 
-        t_det_lst += [ctime]  # detection time tags (including deadtime)
-        t_phot_lst += [ptime]  # photon time tags
+        ctime /= dt_sim  # convert from s to clock counts since sync event
+        ptime /= dt_sim  # convert from s to clock counts since sync event
+
+        for i in range(len(ctime)):
+            det_events.append(ctime[i])  # detection time tags
+            det_sync_idx.append(n)
+        for i in range(len(ptime)):
+            phot_events.append(ptime[i])  # photon time tags
+            phot_sync_idx.append(n)
+
+    det_idx = np.arange(len(det_events))
+    phot_idx = np.arange(len(phot_events))
+
+
+
 
     print('time elapsed: {}'.format(time.time() - start))
 
-    flight_time = xr.DataArray(np.concatenate(t_det_lst))
-    flight_time = flight_time[np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]  # Exclude specified t.o.f. bins
-    n_shots = Nshot
-    t_det_lst = t_det_lst
+    # flight_time = xr.DataArray(np.concatenate(t_det_lst))
+    # flight_time = flight_time[np.where((flight_time >= window_bnd[0]) & (flight_time < window_bnd[1]))]  # Exclude specified t.o.f. bins
+    # n_shots = Nshot
+    # t_det_lst = t_det_lst
+    #
+    # true_flight_time = xr.DataArray(np.concatenate(t_phot_lst))
+    # true_flight_time = true_flight_time[np.where((true_flight_time >= window_bnd[0]) & (true_flight_time < window_bnd[1]))]
 
-    true_flight_time = xr.DataArray(np.concatenate(t_phot_lst))
-    true_flight_time = true_flight_time[np.where((true_flight_time >= window_bnd[0]) & (true_flight_time < window_bnd[1]))]
-
-    return flight_time, true_flight_time, n_shots, t_det_lst, t_phot_lst
+    return det_idx, phot_idx, sync_idx, det_sync_idx, phot_sync_idx, det_events, phot_events
+    # return flight_time, true_flight_time, n_shots, t_det_lst, t_phot_lst
 
 if __name__ == '__main__':
+
+    import data_organize as dorg
 
     ### PARAMETERS ###
 
@@ -97,50 +123,56 @@ if __name__ == '__main__':
     dt_sim = 25e-12  # [s]
 
     tD = 25e-9  # [s] deadtime
-    Nshot = int(1e5)  # number of laser shots
+    Nshot = int(1e8)  # number of laser shots
     wrap_deadtime = True  # wrap deadtime between shots
-
     window_bnd = [26e-9, 34e-9]  # [s] time-of-flight bounds
-
     laser_pulse_width = 500e-12  # [s] laser pulse width
     target_time = 31.2e-9  # [s] target location in time
-    target_amplitude = 1.15e8  # [Hz] target peak count rate
+    target_amplitude = 1e5  # [Hz] target peak count rate
     background = 1e4  # [Hz] background count rate
 
-    serialize = True  # Set TRUE to serialize output as a pickle object
-
-
     ### GENERATE SIMULATED DATA ###
+    det_idx, phot_idx, sync_idx, det_sync_idx, phot_sync_idx, det_events, phot_events = gen_sim_data(t_sim_max, dt_sim,
+                                                                                                     tD, Nshot,
+                                                                                                     wrap_deadtime,
+                                                                                                     window_bnd,
+                                                                                                     laser_pulse_width,
+                                                                                                     target_time,
+                                                                                                     target_amplitude,
+                                                                                                     background)
 
-    flight_time, true_flight_time, n_shots, t_det_lst, t_phot_lst = gen_sim_data(t_sim_max, dt_sim, tD, Nshot,
-                                                                                 wrap_deadtime, window_bnd,
-                                                                                 laser_pulse_width, target_time,
-                                                                                 target_amplitude, background)
+    time_tag_index = det_idx
+    true_time_tag_index = phot_idx
+    sync_index = sync_idx
+    time_tag = det_events
+    true_time_tag = phot_events
+    time_tag_sync_index = det_sync_idx
+    true_time_tag_sync_index = phot_sync_idx
 
     # Save simulated data to netCDF
-    if serialize:
-        processed_data = xr.Dataset(
-            data_vars=dict(
-                flight_time=xr.DataArray(flight_time, dims='flight time'),
-                true_flight_time=xr.DataArray(true_flight_time, dims='true flight time'),
-                n_shots=n_shots,
-                t_det_lst=(['det1'], t_det_lst),
-                t_phot_lst=('true detections', t_phot_lst),
-                target_amplitude=target_amplitude,
-                target_time=target_time,
-                laser_pulse_width=laser_pulse_width,
-                window_bnd=window_bnd,
-                background=background
-            ),
-            attrs=dict(
-                description="'flight_time': time tagged data; \n'n_shots': number of laser shots; \n't_det_lst': detections per laser shot in each corresponding row")
+    sim_data = xr.Dataset(
+        data_vars=dict(
+            time_tag=(['time_tag_index'], time_tag),
+            time_tag_sync_index=(['time_tag_index'], time_tag_sync_index),
+            true_time_tag=(['true_time_tag_index'], true_time_tag),
+            true_time_tag_sync_index=(['true_time_tag_index'], true_time_tag_sync_index),
+            laser_pulse_width=laser_pulse_width,
+            target_time=target_time,
+            target_amplitude=target_amplitude,
+            background=background
+        ),
+        coords=dict(
+            sync_index=(['sync_index'], sync_index)
         )
+    )
 
-        save_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Data\simulated'
-        fname_pkl = r'\sim_amp{:.1E}_nshot{:.1E}.pkl'.format(target_amplitude, Nshot)
-        outfile = open(save_dir+fname_pkl, 'wb')
-        pickle.dump(processed_data, outfile)
-        outfile.close()
+    save_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated'
+    fname = r'\sim_amp{:.1E}_nshot{:.1E}.nc'.format(target_amplitude, Nshot)
+    sim_data.to_netcdf(save_dir+fname)
+
+    flight_time, n_shots, t_det_lst_ref = dorg.data_organize(dt_sim, save_dir, fname, window_bnd,
+                                                                     max_lsr_num=1e2,
+                                                                     exclude_shots=False)
 
     # Scaled time-of-flight histogram
     fig = plt.figure()
@@ -151,11 +183,11 @@ if __name__ == '__main__':
     N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
     center = 0.5 * (bins[:-1] + bins[1:])
     ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5, label='detected photons')
-    n, bins = np.histogram(true_flight_time, bins=bin_array)
-    binwidth = np.diff(bins)[0]
-    N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
-    center = 0.5 * (bins[:-1] + bins[1:])
-    ax.bar(center, N, align='center', width=binwidth, color='r', alpha=0.5, label='true photons')
+    # n, bins = np.histogram(true_flight_time, bins=bin_array)
+    # binwidth = np.diff(bins)[0]
+    # N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
+    # center = 0.5 * (bins[:-1] + bins[1:])
+    # ax.bar(center, N, align='center', width=binwidth, color='r', alpha=0.5, label='true photons')
     ax.set_title('Arrival Rate Histogram')
     ax.set_xlabel('time [s]')
     ax.set_ylabel('Photon Arrival Rate [Hz]')

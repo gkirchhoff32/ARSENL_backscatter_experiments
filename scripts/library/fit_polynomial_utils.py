@@ -297,6 +297,7 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         pred_eval, integral_eval = fit_model(intgrl_N, active_ratio_hst_ref, t_eval_norm, t_intgrl, cheby=True)
 
         # If the number of shots between evaluation set and validation set differ, then arrival rate needs to be scaled accordingly.
+        # Refer to Grant's notes for the derivation of this rescaling expression
         n_det_eval = len(pred_eval)
         C_scale = n_det_eval / n_shots_eval / integral_eval
         loss_eval = loss_fn(C_scale * pred_eval, C_scale * integral_eval * torch.tensor(n_shots_eval))

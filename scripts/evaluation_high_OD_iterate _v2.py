@@ -36,16 +36,19 @@ c = 2.99792458e8  # [m/s] Speed of light
 
 # EDIT THESE PARAMETERS BEFORE RUNNING!
 ### PARAMETERS ###
-exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit/ref' variables)
-max_lsr_num_ref = int(3.3e6)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(1e4)  # Maximum number of laser shots for the fit dataset
-use_final_idx = False  # Set TRUE if you want to use up to the OD value preceding the reference OD
-stop_idx = 10  # If 'use_final_idx' FALSE, set the max idx value to this value (for troubleshooting purposes)
+exclude_shots = False  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
+max_lsr_num_ref = int(1e7)  # Maximum number of laser shots for the reference dataset
+max_lsr_num_fit = int(1e5)  # Maximum number of laser shots for the fit dataset
+use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
+start_idx = 0  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
+stop_idx = 3  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = False    # Set True to include deadtime in noise model
+include_deadtime = True  # Set True to include deadtime in noise model
+use_sim = True  # Set True if using simulated data
 
 window_bnd = [27.5e-9, 33.5e-9]  # [s] Set boundaries for binning to exclude outliers
-deadtime = 29.1e-9  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
+# deadtime = 29.1e-9  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
+deadtime = 25e-9  # [s] simulated deadtime
 dt = 25e-12  # [s] TCSPC resolution
 
 # Optimization parameters
@@ -56,27 +59,62 @@ term_persist = 20  # relative step size averaging interval in iterations
 intgrl_N = 10000  # Set number of steps in numerical integration
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
-M_min = 8
-M_max = 22
-step = 2
+M_min = 4
+M_max = 16
+step = 1
 M_lst = np.arange(M_min, M_max, step)
 
 ### PATH VARIABLES ###
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.02.06\netcdf'  # Where the data is loaded from
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated_short'  # Where the data is loaded from
 save_dir = load_dir + r'/../../evaluation_loss'  # Where the evaluation loss outputs will be saved
-fname_ref = r'\OD50_Dev_0_-_2023-02-08_11.22.38_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
+fname_ref = r'\sim_amp1.0E+06_nshot1.0E+06.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
+
+# Generate list of ODs used in the file directory
+if use_sim:
+    rho_ref = float(fname_ref[8:15])
+else:
+    OD_ref = int(fname_ref[3:5]) / 10
+files = os.listdir(load_dir)
+if use_sim:
+    rho_list = np.zeros(len(files))
+    for i in range(len(files)):
+        rho_val = float(files[i][7:14])
+        rho_list[i] = rho_val
+    min_idx = np.where(rho_list == min(rho_list))[0]
+    max_idx = np.where(rho_list == max(rho_list))[0]
+else:
+    OD_list = np.zeros(len(files))
+    for i in range(len(files)):
+        OD_list[i] = float(files[i][2:4]) / 10
+    min_idx = np.where(OD_list == min(OD_list))[0]
+    max_idx = np.where(OD_list == max(OD_list))[0]
+
+if run_full and use_final_idx:
+    start_idx = 0
+    stop_idx = len(files)
 
 # Save file name for important outputs (to csv and pickle object). These are used by scripts like "plot_eval_loss.ipynb"
-save_csv_file = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}.csv'.format(include_deadtime, M_min, M_max-1,
-                                                                        max_lsr_num_fit)
-save_csv_file_fit = r'\eval_loss_dtime{}_order{}-{}_shots{:.2E}_best_fit.csv'.format(include_deadtime, M_min, M_max-1,
-                                                                                     max_lsr_num_fit)
-save_dframe_fname = r'\fit_figures\params_eval_loss_dtime{}_order{}-{}' \
-                     '_ref_shots{:.2E}_lsr_shots{:.2E}_best_fit.pkl'.format(include_deadtime, M_min, M_max-1,
-                                                                            max_lsr_num_ref, max_lsr_num_fit)
-save_plt_fname = r'\eval_loss_dtime{}_order{}-{}_ref_shots{:.2E}_lsr_shots{:.2E}.png'.format(include_deadtime, M_min,
-                                                                                             M_max-1, max_lsr_num_ref,
-                                                                                             max_lsr_num_fit)
+save_csv_file = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}.csv'.format(include_deadtime, 'Rho' if use_sim else 'OD',
+                                                                                        rho_list[min_idx] if use_sim else OD_list[min_idx],
+                                                                                        rho_list[max_idx] if use_sim else OD_list[max_idx],
+                                                                                        M_min, M_max-1, max_lsr_num_fit)
+save_csv_file_fit = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}_best_fit.csv'.format(include_deadtime, 'Rho' if use_sim else 'OD',
+                                                                                                     rho_list[min_idx] if use_sim else OD_list[min_idx],
+                                                                                                     rho_list[max_idx] if use_sim else OD_list[max_idx],
+                                                                                                     M_min, M_max-1,
+                                                                                                     max_lsr_num_fit)
+save_dframe_fname = r'\fit_figures\params_eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}' \
+                     '_ref_shots{:.2E}_lsr_shots{:.2E}_best_fit.pkl'.format(include_deadtime, 'Rho' if use_sim else 'OD',
+                                                                            rho_list[min_idx] if use_sim else OD_list[min_idx],
+                                                                            rho_list[max_idx] if use_sim else OD_list[max_idx],
+                                                                            M_min, M_max-1, max_lsr_num_ref,
+                                                                            max_lsr_num_fit)
+# save_plt_fname = r'\eval_loss_dtime{}_OD{}-{}_order{}-{}_ref_shots{:.2E}_lsr_shots{:.2E}.png'.format(include_deadtime,
+#                                                                                                      OD_list[start_idx],
+#                                                                                                      OD_list[stop_idx-1],
+#                                                                                                      M_min, M_max-1,
+#                                                                                                      max_lsr_num_ref,
+#                                                                                                      max_lsr_num_fit)
 
 ########################################################################################################################
 
@@ -85,16 +123,12 @@ t_min = window_bnd[0]
 t_max = window_bnd[1]
 t_fine = np.arange(t_min, t_max, dt)
 
-# Generate list of ODs used in the file directory
-files = os.listdir(load_dir)
-OD_list = np.zeros(len(files))
-for i in range(len(files)):
-    OD_list[i] = float(files[i][2:4]) / 10
-
-OD_ref = int(fname_ref[3:5]) / 10
 flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd, max_lsr_num_ref,
                                                                  exclude_shots)
-print('\n{}:'.format(fname_ref[1:5]))
+if use_sim:
+    print('\n{}'.format(fname_ref[1:15]))
+else:
+    print('\n{}:'.format(fname_ref[1:5]))
 print('Number of detections (reference): {}'.format(len(flight_time_ref)))
 print('Number of laser shots (reference): {}'.format(n_shots_ref))
 
@@ -116,15 +150,16 @@ if run_full:
     flight_time_lst = []
     active_ratio_hst_lst = []
 
-    if use_final_idx:
-        stop_idx = int(np.where(OD_list == OD_ref)[0])
-
-    for k in range(stop_idx):
+    for k in np.arange(start_idx, stop_idx):
+        # if k == skip_idx:
+        #     continue
         fname = r'/' + files[k]
         # Obtain the OD value from the file name. Follow the README guide to ascertain the file naming convention
-        OD_fit = int(fname[3:5]) / 10
         flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num_fit, exclude_shots)
-        print('\n{}:'.format(fname[1:5]))
+        if use_sim:
+            print('\n{}'.format(fname[1:15]))
+        else:
+            print('\n{}:'.format(fname[1:5]))
         print('Number of detections: {}'.format(len(flight_time)))
         print('Number of laser shots: {}'.format(n_shots))
 
@@ -149,15 +184,15 @@ if run_full:
 
         # Run fit optimizer
         ax, val_loss_arr, eval_loss_arr, \
-        fit_rate_fine, coeffs, C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr,
-                                                              t_phot_eval_tnsr, active_ratio_hst_fit,
-                                                              active_ratio_hst_val, active_ratio_hst_ref,
-                                                              n_shots_fit, n_shots_val, n_shots_eval, learning_rate,
-                                                              rel_step_lim, intgrl_N, max_epochs, term_persist)
+        fit_rate_fine, coeffs, \
+        C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,
+                                       active_ratio_hst_fit, active_ratio_hst_val, active_ratio_hst_ref, n_shots_fit,
+                                       n_shots_val, n_shots_eval, learning_rate, rel_step_lim, intgrl_N, max_epochs,
+                                       term_persist)
 
         ax.set_ylabel('Loss')
         ax.set_xlabel('Iterations')
-        ax.set_title('OD{}'.format(OD_list[k]))
+        ax.set_title('{}{:.2E}'.format('True Rho = ' if use_sim else 'OD = ', rho_list[k] if use_sim else +OD_list[k]))
         plt.suptitle('Fit loss')
         plt.tight_layout()
         ax.legend()
@@ -197,7 +232,7 @@ if run_full:
         # Arrival rate fit
         fit_rate_seg = fit_rate_fine[min_order, :]
         ax.plot(t_fine, fit_rate_seg, 'r--')
-        ax.set_title('Arrival Rate Fit: OD{}'.format(OD_list[k]))
+        ax.set_title('Arrival Rate Fit: {}{:.2E}'.format('True Rho = ' if use_sim else 'OD = ', rho_list[k] if use_sim else +OD_list[k]))
         ax.set_xlabel('time [s]')
         ax.set_ylabel('Photon Arrival Rate [Hz]')
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -209,36 +244,40 @@ if run_full:
         flight_time_lst.append(flight_time)
         active_ratio_hst_lst.append(active_ratio_hst_fit)
 
-    hypothetical = 0.1**(OD_ref-np.array(OD_list))
-    print('\nScale factor for OD:')
-    for k in range(stop_idx):
-        print('{}: Scale Factor {:.3}, Hypothetical {:.3}'.format(OD_list[k], C_scale_final[k], hypothetical[k]))
-
     # Save to csv file
-    headers = ['OD', 'Evaluation Loss', 'Optimal Scaling Factor', 'Hypothetical Scaling Factor',
-               'Average %-age where Detector was Active']
-    df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
-                        pd.DataFrame(hypothetical), pd.DataFrame(percent_active_lst)], axis=1)
+    headers = ['{}'.format('Rho' if use_sim else 'OD'), 'Evaluation Loss', 'Optimal Scaling Factor', 'Average %-age where Detector was Active']
+    if use_sim:
+        df_out = pd.concat([pd.DataFrame(rho_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
+                            pd.DataFrame(percent_active_lst)], axis=1)
+    else:
+        df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
+                            pd.DataFrame(percent_active_lst)], axis=1)
     df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
 
-    headers = ['OD'+str(i) for i in OD_list[:stop_idx]]
+    if use_sim:
+        headers = ['Rho' + str(i) for i in rho_list[start_idx:stop_idx]]
+    else:
+        headers = ['OD'+str(i) for i in OD_list[start_idx:stop_idx]]
     headers.insert(0, 'time vector')
     df_out = pd.DataFrame(np.array(fit_rate_seg_lst).T.tolist())
     df_out = pd.concat([pd.DataFrame(t_fine), df_out], axis=1)
     df_out = df_out.to_csv(save_dir + save_csv_file_fit, header=headers)
 
-    dframe = [flight_time_lst, t_min, t_max, dt, n_shots, active_ratio_hst_lst]
+    dframe = [flight_time_lst, flight_time_ref, t_min, t_max, dt, n_shots, n_shots_ref, active_ratio_hst_lst]
     pickle.dump(dframe, open(save_dir+save_dframe_fname, 'wb'))
 
     print('Total run time: {} seconds'.format(time.time()-start))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.plot(OD_list[:stop_idx], eval_final_loss_lst, 'r.')
-    ax.set_xlabel('OD')
+    if use_sim:
+        ax.semilogx(rho_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
+    else:
+        ax.plot(OD_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
+    ax.set_xlabel('{}'.format('Rho [Hz]' if use_sim else 'OD'))
     ax.set_ylabel('Evaluation loss')
     ax.set_title('Evaluation Loss vs OD')
-    fig.savefig(save_dir + save_plt_fname)
+    # fig.savefig(save_dir + save_plt_fname)
     time.sleep(2)
     plt.show()
 
