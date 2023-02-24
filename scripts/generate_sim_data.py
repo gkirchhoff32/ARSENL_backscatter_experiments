@@ -129,7 +129,7 @@ if __name__ == '__main__':
     laser_pulse_width = 500e-12  # [s] laser pulse width
     target_time = 31.2e-9  # [s] target location in time
     target_amplitude = 1e5  # [Hz] target peak count rate
-    background = 1e4  # [Hz] background count rate
+    background = 1e4  # [Hz] background count rate (dark count)
 
     ### GENERATE SIMULATED DATA ###
     det_idx, phot_idx, sync_idx, det_sync_idx, phot_sync_idx, det_events, phot_events = gen_sim_data(t_sim_max, dt_sim,

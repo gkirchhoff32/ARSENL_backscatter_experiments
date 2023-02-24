@@ -25,8 +25,8 @@ import pickle
 # Path settings
 # NOTE: User should check these settings when running "load_ARSENL_data.py" or "plot_histogram.py"
 cwd = os.getcwd()
-data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\SPCM_Data_2023.02.06'
-fname = r'\Dev_0_-_2023-02-06_17.51.44_OD3.8.ARSENL'
+data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.02.06'
+fname = r'\Dev_0_-_2023-02-08_11.22.38_OD5.0.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 

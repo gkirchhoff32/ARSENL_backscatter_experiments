@@ -67,7 +67,7 @@ M_lst = np.arange(M_min, M_max, step)
 ### PATH VARIABLES ###
 load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated_short'  # Where the data is loaded from
 save_dir = load_dir + r'/../../evaluation_loss'  # Where the evaluation loss outputs will be saved
-fname_ref = r'\sim_amp1.0E+06_nshot1.0E+06.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
+fname_ref = r'\sim_amp1.0E+06_nshot1.0E+07.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
 # Generate list of ODs used in the file directory
 if use_sim:
@@ -80,14 +80,14 @@ if use_sim:
     for i in range(len(files)):
         rho_val = float(files[i][7:14])
         rho_list[i] = rho_val
-    min_idx = np.where(rho_list == min(rho_list))[0]
-    max_idx = np.where(rho_list == max(rho_list))[0]
+    min_idx = np.where(rho_list == min(rho_list))[0][0]
+    max_idx = np.where(rho_list == max(rho_list))[0][0]
 else:
     OD_list = np.zeros(len(files))
     for i in range(len(files)):
         OD_list[i] = float(files[i][2:4]) / 10
-    min_idx = np.where(OD_list == min(OD_list))[0]
-    max_idx = np.where(OD_list == max(OD_list))[0]
+    min_idx = np.where(OD_list == min(OD_list))[0][0]
+    max_idx = np.where(OD_list == max(OD_list))[0][0]
 
 if run_full and use_final_idx:
     start_idx = 0
