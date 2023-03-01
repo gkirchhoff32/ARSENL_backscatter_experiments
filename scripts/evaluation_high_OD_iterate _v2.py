@@ -53,7 +53,7 @@ dt = 25e-12  # [s] TCSPC resolution
 
 # Optimization parameters
 rel_step_lim = 1e-8  # termination criteria based on step size
-max_epochs = 400  # maximum number of iterations/epochs
+max_epochs = 300  # maximum number of iterations/epochs
 learning_rate = 1e-1  # ADAM learning rate
 term_persist = 20  # relative step size averaging interval in iterations
 intgrl_N = 10000  # Set number of steps in numerical integration
@@ -65,7 +65,7 @@ step = 1
 M_lst = np.arange(M_min, M_max, step)
 
 ### PATH VARIABLES ###
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated_short'  # Where the data is loaded from
+load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated_short'  # Where the data is loaded from
 save_dir = load_dir + r'/../../evaluation_loss'  # Where the evaluation loss outputs will be saved
 fname_ref = r'\sim_amp1.0E+06_nshot1.0E+07.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
