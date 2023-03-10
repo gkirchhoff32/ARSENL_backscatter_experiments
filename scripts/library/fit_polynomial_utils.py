@@ -83,7 +83,7 @@ class Fit_Pulse(torch.nn.Module):
         # assert (len(fine_res_model) == len(active_ratio_hst))
         active_ratio_hst.resize_(fine_res_model.size())
         fine_res_model = fine_res_model * active_ratio_hst  # Generate deadtime noise model
-        integral_out = self.trapezoid(fine_res_model, dt)  # Numerically integrate
+        integral_out = self.riemann(fine_res_model, dt)  # Numerically integrate
 
         return model_out, integral_out
 
