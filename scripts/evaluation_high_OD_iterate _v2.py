@@ -1,7 +1,7 @@
 # validation_high_OD_iterate.py
 #
 # Grant Kirchhoff
-# Last Updated: 02/02/2023
+# Last Updated: 03/09/2023 (actually last time I bothered to edit this haha)
 """
 Automation script to loop through different OD datasets and evaluate fit performance against an evaluation dataset
 (i.e., high OD setting).
@@ -43,10 +43,10 @@ use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding
 start_idx = 0  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 3  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = True  # Set True to include deadtime in noise model
+include_deadtime = False  # Set True to include deadtime in noise model
 use_sim = False  # Set True if using simulated data
 
-window_bnd = [27.5e-9, 33.5e-9]  # [s] Set boundaries for binning to exclude outliers
+window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
 # deadtime = 29.1e-9  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
 if use_sim:
     deadtime = 25e-9  # [s] simulated deadtime
@@ -59,18 +59,18 @@ rel_step_lim = 1e-8  # termination criteria based on step size
 max_epochs = 300  # maximum number of iterations/epochs
 learning_rate = 1e-1  # ADAM learning rate
 term_persist = 20  # relative step size averaging interval in iterations
-intgrl_N = 10000  # Set number of steps in numerical integration
+# intgrl_N = 10000  # Set number of steps in numerical integration
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
-M_min = 6
+M_min = 7
 M_max = 18
 step = 1
 M_lst = np.arange(M_min, M_max, step)
 
 ### PATH VARIABLES ###
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.02.06\netcdf_new_OD50_Subset'  # Where the data is loaded from
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset'  # Where the data is loaded from
 save_dir = load_dir + r'/../../../evaluation_loss'  # Where the evaluation loss outputs will be saved
-fname_ref = r'\OD50_Dev_0_-_2023-03-02_12.07.39_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
+fname_ref = r'\OD50_Dev_0_-_2023-03-06_16.56.00_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
 # Generate list of ODs used in the file directory
 if use_sim:
@@ -125,6 +125,8 @@ save_dframe_fname = r'\fit_figures\params_eval_loss_dtime{}_{}{:.1E}-{:.1E}_orde
 t_min = window_bnd[0]
 t_max = window_bnd[1]
 t_fine = np.arange(t_min, t_max, dt)
+
+intgrl_N = len(t_fine)
 
 flight_time_ref, n_shots_ref, t_det_lst_ref = dorg.data_organize(dt, load_dir, fname_ref, window_bnd, max_lsr_num_ref,
                                                                  exclude_shots)

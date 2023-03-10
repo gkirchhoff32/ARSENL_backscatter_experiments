@@ -59,7 +59,7 @@ def load_xarray_dataset(data_dir, fname):
     dataset = xr.open_dataset(data_dir + fname)
 
 def set_binwidth(tmin, tmax, resolution):
-    bin_array = np.arange(tmin, tmax+resolution, resolution)
+    bin_array = np.arange(tmin, tmax, resolution)
     return bin_array
 
 
