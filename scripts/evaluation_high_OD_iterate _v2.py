@@ -40,13 +40,13 @@ exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (e
 max_lsr_num_ref = int(6e6)  # Maximum number of laser shots for the reference dataset
 max_lsr_num_fit = int(1e5)  # Maximum number of laser shots for the fit dataset
 use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
-start_idx = 4  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
-stop_idx = 5  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
+start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
+stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
 include_deadtime = True  # Set True to include deadtime in noise model
 use_sim = False  # Set True if using simulated data
 
-window_bnd = [32e-9, 40e-9]  # [s] Set boundaries for binning to exclude outliers
+window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
 # deadtime = 29.1e-9  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
 if use_sim:
     deadtime = 25e-9  # [s] simulated deadtime
@@ -55,20 +55,20 @@ else:
 dt = 25e-12  # [s] TCSPC resolution
 
 # Optimization parameters
-rel_step_lim = 1e-6  # termination criteria based on step size
-max_epochs = 2000  # maximum number of iterations/epochs
+rel_step_lim = 1e-7  # termination criteria based on step size
+max_epochs = 6000  # maximum number of iterations/epochs
 learning_rate = 1e-1  # ADAM learning rate
 term_persist = 20  # relative step size averaging interval in iterations
 # intgrl_N = 10000  # Set number of steps in numerical integration
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 7
-M_max = 20
+M_max = 24
 step = 1
 M_lst = np.arange(M_min, M_max, step)
 
 ### PATH VARIABLES ###
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset'  # Where the data is loaded from
+load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset'  # Where the data is loaded from
 save_dir = load_dir + r'/../../../evaluation_loss'  # Where the evaluation loss outputs will be saved
 fname_ref = r'\OD50_Dev_0_-_2023-03-06_16.56.00_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
