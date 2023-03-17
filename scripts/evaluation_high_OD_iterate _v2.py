@@ -55,15 +55,15 @@ else:
 dt = 25e-12  # [s] TCSPC resolution
 
 # Optimization parameters
-rel_step_lim = 1e-7  # termination criteria based on step size
-max_epochs = 6000  # maximum number of iterations/epochs
+rel_step_lim = 1e-8  # termination criteria based on step size
+max_epochs = 10000  # maximum number of iterations/epochs
 learning_rate = 1e-1  # ADAM learning rate
 term_persist = 20  # relative step size averaging interval in iterations
 # intgrl_N = 10000  # Set number of steps in numerical integration
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 7
-M_max = 24
+M_max = 22
 step = 1
 M_lst = np.arange(M_min, M_max, step)
 
@@ -90,7 +90,7 @@ else:
     for i in range(len(files)):
         OD_list[i] = float(files[i][2:4]) / 10
     min_idx = np.where(OD_list == min(OD_list))[0][0]
-    max_idx = np.where(OD_list == max(OD_list))[0][0]
+    max_idx = np.where(OD_list == np.unique(OD_list)[-2])[0][0]
 
 if run_full and use_final_idx:
     start_idx = 0
