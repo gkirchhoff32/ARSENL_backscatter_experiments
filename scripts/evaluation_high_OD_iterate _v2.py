@@ -38,12 +38,12 @@ c = 2.99792458e8  # [m/s] Speed of light
 ### PARAMETERS ###
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(6e6)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(7.5e4)  # Maximum number of laser shots for the fit dataset
+max_lsr_num_fit = int(2.5e5)  # Maximum number of laser shots for the fit dataset
 use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
 start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = True  # Set True to include deadtime in noise model
+include_deadtime = False  # Set True to include deadtime in noise model
 use_sim = False  # Set True if using simulated data
 
 window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
