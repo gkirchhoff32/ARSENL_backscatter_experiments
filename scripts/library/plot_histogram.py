@@ -27,7 +27,7 @@ c = 299792458  # [m/s] Speed of light
 create_csv = False  # Set TRUE to generate a .csv from .ARSENL data
 load_data = True  # Set TRUE to load data into a DataFrame and serialize into a pickle object
 load_netcdf = True  # Set TRUE if loading from netcdf file ('*.ARSENL.nc'). Set FALSE if loading from *.ARSENL file.
-window_bnd = [30e-9, 40e-9]  # [s] Set temporal boundaries for binning
+window_bnd = [32e-9, 38e-9]  # [s] Set temporal boundaries for binning
 dt = 25e-12  # [s] Resolution
 
 t_min = window_bnd[0]
@@ -35,7 +35,7 @@ t_max = window_bnd[1]
 
 if load_netcdf:
     data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06'
-    fname = r'\OD32_Dev_0_-_2023-03-06_13.20.53_OD3.2.ARSENL.nc'
+    fname = r'\OD30_Dev_0_-_2023-03-06_13.14.20_OD3.0.ARSENL.nc'
 
     ds = xr.open_dataset(data_dir + fname)
 
@@ -83,7 +83,7 @@ center = 0.5 * (bins[:-1]+bins[1:])
 ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75)
 ax1.set_xlabel('Time of flight [s]')
 ax1.set_ylabel('Arrival rate [MHz]')
-ax1.set_title('Time of flight for INPHAMIS backscatter')
+ax1.set_title('Measured Profile of Wall using SPCM Detector')
 plt.tight_layout()
 plt.show()
 

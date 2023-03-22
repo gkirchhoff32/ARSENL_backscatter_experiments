@@ -220,7 +220,7 @@ def generate_fit_val_eval(data, data_ref, t_det_lst, n_shots, n_shots_ref):
 # Generate fit routine
 def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, active_ratio_hst_fit,
                 active_ratio_hst_val, active_ratio_hst_ref, n_shots_fit, n_shots_val, n_shots_eval, learning_rate=1e-1,
-                rel_step_lim=1e-8, intgrl_N=10000, max_epochs=400, term_persist=20):
+                rel_step_lim=1e-8, intgrl_N=10000, max_epochs=4000, term_persist=20):
 
     t_min, t_max = t_fine[0], t_fine[-1]
 
