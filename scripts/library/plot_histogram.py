@@ -27,15 +27,15 @@ c = 299792458  # [m/s] Speed of light
 create_csv = False  # Set TRUE to generate a .csv from .ARSENL data
 load_data = True  # Set TRUE to load data into a DataFrame and serialize into a pickle object
 load_netcdf = True  # Set TRUE if loading from netcdf file ('*.ARSENL.nc'). Set FALSE if loading from *.ARSENL file.
-window_bnd = [32e-9, 38e-9]  # [s] Set temporal boundaries for binning
+window_bnd = [28e-9, 34e-9]  # [s] Set temporal boundaries for binning
 dt = 25e-12  # [s] Resolution
 
 t_min = window_bnd[0]
 t_max = window_bnd[1]
 
 if load_netcdf:
-    data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06'
-    fname = r'\OD30_Dev_0_-_2023-03-06_13.14.20_OD3.0.ARSENL.nc'
+    data_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated'
+    fname = r'\sim_amp1.0E+06_nshot1.0E+05.nc'
 
     ds = xr.open_dataset(data_dir + fname)
 
