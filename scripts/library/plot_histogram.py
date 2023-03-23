@@ -27,15 +27,18 @@ c = 299792458  # [m/s] Speed of light
 create_csv = False  # Set TRUE to generate a .csv from .ARSENL data
 load_data = True  # Set TRUE to load data into a DataFrame and serialize into a pickle object
 load_netcdf = True  # Set TRUE if loading from netcdf file ('*.ARSENL.nc'). Set FALSE if loading from *.ARSENL file.
-window_bnd = [28e-9, 34e-9]  # [s] Set temporal boundaries for binning
+use_donovan = False  # Set TRUE if user wants to scale the histogram by using the Donovan correction
+
+window_bnd = [32e-9, 38e-9]  # [s] Set temporal boundaries for binning
 dt = 25e-12  # [s] Resolution
+deadtime = 29.1e-9  # [s] Deadtime interval
 
 t_min = window_bnd[0]
 t_max = window_bnd[1]
 
 if load_netcdf:
-    data_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated'
-    fname = r'\sim_amp1.0E+06_nshot1.0E+05.nc'
+    data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06'
+    fname = r'\OD35_Dev_0_-_2023-03-06_14.09.38_OD3.5.ARSENL.nc'
 
     ds = xr.open_dataset(data_dir + fname)
 
@@ -79,8 +82,13 @@ n, bins = np.histogram(flight_time, bins=bin_array)
 print('Histogram plot time elapsed: {:.3} sec'.format(time.time() - start))
 binwidth = np.diff(bins)[0]
 N = n / binwidth / n_shots
+if use_donovan:
+    N_dono = N / (1 - N*deadtime)
 center = 0.5 * (bins[:-1]+bins[1:])
-ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75)
+ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75, label='Detections')
+if use_donovan:
+    ax1.bar(center, N_dono/1e6, align='center', width=binwidth, color='r', alpha=0.5, label='Donovan "Corrected"')
+    plt.legend()
 ax1.set_xlabel('Time of flight [s]')
 ax1.set_ylabel('Arrival rate [MHz]')
 ax1.set_title('Measured Profile of Wall using SPCM Detector')
