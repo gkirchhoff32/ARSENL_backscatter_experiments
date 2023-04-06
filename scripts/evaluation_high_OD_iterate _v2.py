@@ -43,7 +43,7 @@ use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding
 start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = False  # Set True to include deadtime in noise model
+include_deadtime = True  # Set True to include deadtime in noise model
 use_sim = False  # Set True if using simulated data
 
 window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
