@@ -38,16 +38,16 @@ c = 2.99792458e8  # [m/s] Speed of light
 ### PARAMETERS ###
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(6e6)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(2.5e4)  # Maximum number of laser shots for the fit dataset
+max_lsr_num_fit = int(1e3)  # Maximum number of laser shots for the fit dataset
 use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
 start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = True  # Set True to include deadtime in noise model
-use_sim = False  # Set True if using simulated data
+include_deadtime = True  # Set TRUE to include deadtime in noise model
+use_sim = False  # Set TRUE if using simulated data
+repeat_run = True  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
 
 window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
-# deadtime = 29.1e-9  # [s] Acquisition deadtime (25ns for PicoQuant boards, 29.1ns for Excelitas SPCM)
 if use_sim:
     deadtime = 25e-9  # [s] simulated deadtime
 else:
@@ -63,12 +63,17 @@ term_persist = 20  # relative step size averaging interval in iterations
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 7
-M_max = 22
+M_max = 8
 step = 1
 M_lst = np.arange(M_min, M_max, step)
 
+if repeat_run:
+    repeat_num = 2  # If 'repeat_run' is TRUE, this is the number of repetitions
+else:
+    repeat_num = 0
+
 ### PATH VARIABLES ###
-load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset'  # Where the data is loaded from
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset_Test'  # Where the data is loaded from
 save_dir = load_dir + r'/../../../evaluation_loss'  # Where the evaluation loss outputs will be saved
 fname_ref = r'\OD50_Dev_0_-_2023-03-06_16.56.00_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
@@ -94,7 +99,7 @@ else:
 
 if run_full and use_final_idx:
     start_idx = 0
-    stop_idx = len(files)
+    stop_idx = len(files)-1
 
 # Save file name for important outputs (to csv and pickle object). These are used by scripts like "plot_eval_loss.ipynb"
 save_csv_file = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}.csv'.format(include_deadtime, 'Rho' if use_sim else 'OD',
@@ -147,144 +152,152 @@ else:
 
 # Fitting routine
 if run_full:
-    val_final_loss_lst = []
-    eval_final_loss_lst = []
-    C_scale_final = []
-    percent_active_lst = []
-    fit_rate_seg_lst = []
-    flight_time_lst = []
-    active_ratio_hst_lst = []
+    repeat_range = np.arange(1, repeat_num+2)
+    for j in range(len(repeat_range)):
+        val_final_loss_lst = []
+        eval_final_loss_lst = []
+        C_scale_final = []
+        percent_active_lst = []
+        fit_rate_seg_lst = []
+        flight_time_lst = []
+        active_ratio_hst_lst = []
 
-    for k in np.arange(start_idx, stop_idx):
-        # if k == skip_idx:
-        #     continue
-        fname = r'/' + files[k]
-        # Obtain the OD value from the file name. Follow the README guide to ascertain the file naming convention
-        flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num_fit, exclude_shots)
+        for k in np.arange(start_idx, stop_idx):
+            # if k == skip_idx:
+            #     continue
+            fname = r'/' + files[k]
+            # Obtain the OD value from the file name. Follow the README guide to ascertain the file naming convention
+            flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num_fit, exclude_shots, repeat_range[j])
+            if use_sim:
+                print('\n{}'.format(fname[1:15]))
+            else:
+                print('\n{}:'.format(fname[1:5]))
+            print('Number of detections: {}'.format(len(flight_time)))
+            print('Number of laser shots: {}'.format(n_shots))
+
+            try:
+                t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, \
+                t_det_lst_fit, t_det_lst_val, n_shots_fit, \
+                n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, t_det_lst, n_shots, n_shots_ref)
+            except:
+                ZeroDivisionError
+                print('ERROR: Insufficient laser shots... increase the "max_lsr_num_fit" parameter.')
+                exit()
+
+            # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
+            if not include_deadtime:
+                active_ratio_hst_fit = torch.ones(len(bin_edges)-1)
+                active_ratio_hst_val = torch.ones(len(bin_edges)-1)
+            else:
+                active_ratio_hst_fit = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_fit, n_shots_fit)
+                active_ratio_hst_val = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_val, n_shots_val)
+            percent_active = torch.sum(active_ratio_hst_fit).item()/len(active_ratio_hst_fit)
+            percent_active_lst.append(percent_active)
+
+            # Run fit optimizer
+            ax, val_loss_arr, eval_loss_arr, \
+            fit_rate_fine, coeffs, \
+            C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,
+                                           active_ratio_hst_fit, active_ratio_hst_val, active_ratio_hst_ref, n_shots_fit,
+                                           n_shots_val, n_shots_eval, learning_rate, rel_step_lim, intgrl_N, max_epochs,
+                                           term_persist)
+
+            ax.set_ylabel('Loss')
+            ax.set_xlabel('Iterations')
+            ax.set_title('{}{:.2E}'.format('True Rho = ' if use_sim else 'OD = ', rho_list[k] if use_sim else +OD_list[k]))
+            plt.suptitle('Fit loss')
+            plt.tight_layout()
+            ax.legend()
+
+            print('Validation loss for\n')
+            for i in range(len(M_lst)):
+                print('Order {}: {:.5f}'.format(M_lst[i], val_loss_arr[M_lst[i]]))
+
+            print('Evaluation loss for\n')
+            for i in range(len(M_lst)):
+                print('Order {}: {:.5f}'.format(M_lst[i], eval_loss_arr[M_lst[i]]))
+
+            # Choose order to investigate
+            minx, miny = np.nanargmin(val_loss_arr), np.nanmin(val_loss_arr)
+            min_order = minx
+            try:
+                model = coeffs[min_order, 0:min_order+1]
+                for i in range(min_order+1):
+                    print('Final C{}: {:.4f}'.format(i, model[i]))
+            except:
+                print("\nERROR: Order exceeds maximum complexity iteration value.\n")
+
+            val_final_loss_lst.append(val_loss_arr[min_order])
+            eval_final_loss_lst.append(eval_loss_arr[min_order])
+            C_scale_final.append(C_scale_arr[min_order])
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+
+            bin_array = set_binwidth(t_min, t_max, dt)
+            n, bins = np.histogram(flight_time, bins=bin_array)
+            binwidth = np.diff(bins)[0]
+            N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
+            center = 0.5 * (bins[:-1] + bins[1:])
+            ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5)
+
+            # Arrival rate fit
+            fit_rate_seg = fit_rate_fine[min_order, :]
+            if not repeat_run:
+                ax.plot(t_fine, fit_rate_seg, 'r--')
+                ax.set_title('Arrival Rate Fit: {}{:.2E}'.format('True Rho = ' if use_sim else 'OD = ', rho_list[k] if use_sim else +OD_list[k]))
+                ax.set_xlabel('time [s]')
+                ax.set_ylabel('Photon Arrival Rate [Hz]')
+                props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+                ax.text(0.1, 0.90, 'Polynomial order: {}'.format(min_order), transform=ax.transAxes, fontsize=14,
+                        verticalalignment='top', bbox=props)
+                plt.tight_layout()
+
+            fit_rate_seg_lst.append(fit_rate_seg)
+            flight_time_lst.append(flight_time)
+            active_ratio_hst_lst.append(active_ratio_hst_fit)
+
+        # Save to csv file
+        headers = ['{}'.format('Rho' if use_sim else 'OD'), 'Evaluation Loss', 'Optimal Scaling Factor', 'Average %-age where Detector was Active']
         if use_sim:
-            print('\n{}'.format(fname[1:15]))
+            df_out = pd.concat([pd.DataFrame(rho_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
+                                pd.DataFrame(percent_active_lst)], axis=1)
         else:
-            print('\n{}:'.format(fname[1:5]))
-        print('Number of detections: {}'.format(len(flight_time)))
-        print('Number of laser shots: {}'.format(n_shots))
+            df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
+                                pd.DataFrame(percent_active_lst)], axis=1)
+        if repeat_run:
+            save_csv_file_temp = save_csv_file[:-4] + '#{}.csv'.format(j)
+            save_csv_file_fit_temp = save_csv_file_fit[:-4] + '#{}.csv'.format(j)
+            save_dframe_fname_temp = save_dframe_fname[:-4] + '#{}.pkl'.format(j)
 
-        try:
-            t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, \
-            t_det_lst_fit, t_det_lst_val, n_shots_fit, \
-            n_shots_val, n_shots_eval = fit.generate_fit_val_eval(flight_time, flight_time_ref, t_det_lst, n_shots, n_shots_ref)
-        except:
-            ZeroDivisionError
-            print('ERROR: Insufficient laser shots... increase the "max_lsr_num_fit" parameter.')
-            exit()
+        df_out = df_out.to_csv(save_dir + save_csv_file_temp, header=headers)
 
-        # Generate "active-ratio histogram" that adjusts the histogram proportionally according to how many bins the detector was "active vs dead"
-        if not include_deadtime:
-            active_ratio_hst_fit = torch.ones(len(bin_edges)-1)
-            active_ratio_hst_val = torch.ones(len(bin_edges)-1)
+        if use_sim:
+            headers = ['Rho' + str(i) for i in rho_list[start_idx:stop_idx]]
         else:
-            active_ratio_hst_fit = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_fit, n_shots_fit)
-            active_ratio_hst_val = fit.deadtime_noise_hist(t_min, t_max, intgrl_N, deadtime, t_det_lst_val, n_shots_val)
-        percent_active = torch.sum(active_ratio_hst_fit).item()/len(active_ratio_hst_fit)
-        percent_active_lst.append(percent_active)
+            headers = ['OD'+str(i) for i in OD_list[start_idx:stop_idx]]
+        headers.insert(0, 'time vector')
+        df_out = pd.DataFrame(np.array(fit_rate_seg_lst).T.tolist())
+        df_out = pd.concat([pd.DataFrame(t_fine), df_out], axis=1)
+        df_out = df_out.to_csv(save_dir + save_csv_file_fit_temp, header=headers)
 
-        # Run fit optimizer
-        ax, val_loss_arr, eval_loss_arr, \
-        fit_rate_fine, coeffs, \
-        C_scale_arr = fit.optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr,
-                                       active_ratio_hst_fit, active_ratio_hst_val, active_ratio_hst_ref, n_shots_fit,
-                                       n_shots_val, n_shots_eval, learning_rate, rel_step_lim, intgrl_N, max_epochs,
-                                       term_persist)
+        dframe = [flight_time_lst, flight_time_ref, t_min, t_max, dt, n_shots, n_shots_ref, active_ratio_hst_lst]
+        pickle.dump(dframe, open(save_dir+save_dframe_fname_temp, 'wb'))
 
-        ax.set_ylabel('Loss')
-        ax.set_xlabel('Iterations')
-        ax.set_title('{}{:.2E}'.format('True Rho = ' if use_sim else 'OD = ', rho_list[k] if use_sim else +OD_list[k]))
-        plt.suptitle('Fit loss')
-        plt.tight_layout()
-        ax.legend()
-
-        print('Validation loss for\n')
-        for i in range(len(M_lst)):
-            print('Order {}: {:.5f}'.format(M_lst[i], val_loss_arr[M_lst[i]]))
-
-        print('Evaluation loss for\n')
-        for i in range(len(M_lst)):
-            print('Order {}: {:.5f}'.format(M_lst[i], eval_loss_arr[M_lst[i]]))
-
-        # Choose order to investigate
-        minx, miny = np.nanargmin(val_loss_arr), np.nanmin(val_loss_arr)
-        min_order = minx
-        try:
-            model = coeffs[min_order, 0:min_order+1]
-            for i in range(min_order+1):
-                print('Final C{}: {:.4f}'.format(i, model[i]))
-        except:
-            print("\nERROR: Order exceeds maximum complexity iteration value.\n")
-
-        val_final_loss_lst.append(val_loss_arr[min_order])
-        eval_final_loss_lst.append(eval_loss_arr[min_order])
-        C_scale_final.append(C_scale_arr[min_order])
+        print('Total run time: {} seconds'.format(time.time()-start))
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-
-        bin_array = set_binwidth(t_min, t_max, dt)
-        n, bins = np.histogram(flight_time, bins=bin_array)
-        binwidth = np.diff(bins)[0]
-        N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
-        center = 0.5 * (bins[:-1] + bins[1:])
-        ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5)
-
-        # Arrival rate fit
-        fit_rate_seg = fit_rate_fine[min_order, :]
-        ax.plot(t_fine, fit_rate_seg, 'r--')
-        ax.set_title('Arrival Rate Fit: {}{:.2E}'.format('True Rho = ' if use_sim else 'OD = ', rho_list[k] if use_sim else +OD_list[k]))
-        ax.set_xlabel('time [s]')
-        ax.set_ylabel('Photon Arrival Rate [Hz]')
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.1, 0.90, 'Polynomial order: {}'.format(min_order), transform=ax.transAxes, fontsize=14,
-                verticalalignment='top', bbox=props)
-        plt.tight_layout()
-
-        fit_rate_seg_lst.append(fit_rate_seg)
-        flight_time_lst.append(flight_time)
-        active_ratio_hst_lst.append(active_ratio_hst_fit)
-
-    # Save to csv file
-    headers = ['{}'.format('Rho' if use_sim else 'OD'), 'Evaluation Loss', 'Optimal Scaling Factor', 'Average %-age where Detector was Active']
-    if use_sim:
-        df_out = pd.concat([pd.DataFrame(rho_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
-                            pd.DataFrame(percent_active_lst)], axis=1)
-    else:
-        df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
-                            pd.DataFrame(percent_active_lst)], axis=1)
-    df_out = df_out.to_csv(save_dir + save_csv_file, header=headers)
-
-    if use_sim:
-        headers = ['Rho' + str(i) for i in rho_list[start_idx:stop_idx]]
-    else:
-        headers = ['OD'+str(i) for i in OD_list[start_idx:stop_idx]]
-    headers.insert(0, 'time vector')
-    df_out = pd.DataFrame(np.array(fit_rate_seg_lst).T.tolist())
-    df_out = pd.concat([pd.DataFrame(t_fine), df_out], axis=1)
-    df_out = df_out.to_csv(save_dir + save_csv_file_fit, header=headers)
-
-    dframe = [flight_time_lst, flight_time_ref, t_min, t_max, dt, n_shots, n_shots_ref, active_ratio_hst_lst]
-    pickle.dump(dframe, open(save_dir+save_dframe_fname, 'wb'))
-
-    print('Total run time: {} seconds'.format(time.time()-start))
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    if use_sim:
-        ax.semilogx(rho_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
-    else:
-        ax.plot(OD_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
-    ax.set_xlabel('{}'.format('Rho [Hz]' if use_sim else 'OD'))
-    ax.set_ylabel('Evaluation loss')
-    ax.set_title('Evaluation Loss vs OD')
-    # fig.savefig(save_dir + save_plt_fname)
-    time.sleep(2)
-    plt.show()
+        if use_sim:
+            ax.semilogx(rho_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
+        else:
+            ax.plot(OD_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
+        ax.set_xlabel('{}'.format('Rho [Hz]' if use_sim else 'OD'))
+        ax.set_ylabel('Evaluation loss')
+        ax.set_title('Evaluation Loss vs OD')
+        # fig.savefig(save_dir + save_plt_fname)
+        time.sleep(2)
+        plt.show()
 
 
 

@@ -22,18 +22,19 @@ from load_ARSENL_data import set_binwidth
 
 ### NOTE!!! Make sure to check filepaths for appropriate and MATCHING files for plotting.
 
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\Deadtime_Experiments\Figures\evaluation_loss'
-load_file = r'\eval_loss_dtimeTrue_order4-5_shots1E+04_best_fit.csv'
-param_filename = r'\params_eval_loss_dtimeTrue_order4-5_shots1E+04_best_fit.pkl'
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\evaluation_loss'
+load_file = r'\eval_loss_dtimeFalse_OD1.5E+00-3.4E+00_order7-21_shots5.00E+05_best_fit.csv'
+param_filename = r'\params_eval_loss_dtimeFalse_OD1.5E+00-3.4E+00_order7-21_ref_shots6.00E+06_lsr_shots5.00E+05_best_fit.pkl'
 
 df = pd.read_csv(load_dir + load_file)
 with open(load_dir+r'\fit_figures'+param_filename, 'rb') as f:
    params = pickle.load(f)
 flight_time_lst = params[0]
-t_min = params[1]
-t_max = params[2]
-dt = params[3]
-n_shots = params[4]
+flight_time_ref = params[1]
+t_min = params[2]
+t_max = params[3]
+dt = params[4]
+n_shots = params[5]
 
 headers = list(df.columns.values)
 t_fine = df['time vector']

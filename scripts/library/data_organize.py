@@ -7,7 +7,7 @@
 import numpy as np
 import xarray as xr
 
-def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, exclude_shots=True):
+def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, exclude_shots=True, repeat_num=1):
     '''
     Some bookkeeping. Organizes data into structures and variables required for the fit routine.
     :param dt: (float) Temporal resolution [s]
@@ -37,21 +37,32 @@ def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, exclude_shots=Tr
     if exclude_shots:
         # Obtain sync index corresponding to maximum laser shot number specified by user. If the exact index doesn't
         # have a corresponding detection, then the nearest shot with a detection is chosen.
-        excl_sync = ds.sync_index[max_lsr_num].item()
-        excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0]
-        if excl_ttag_idx.size == 0:
-            nearest = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
+        max_lsr_num_idx = max_lsr_num * repeat_num
+        min_lsr_num_idx = max_lsr_num * (repeat_num-1)
+        excl_sync_max = ds.sync_index[max_lsr_num_idx].item()
+        excl_sync_min = ds.sync_index[min_lsr_num_idx].item()
+        excl_ttag_idx_max = np.where(ttag_sync_idx == excl_sync_max)[0]
+        excl_ttag_idx_min = np.where(ttag_sync_idx == excl_sync_min)[0]
+        if excl_ttag_idx_max.size == 0:
+            nearest_max = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync_max)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
             print(
                 "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
-                    nearest))
-            excl_sync = ds.sync_index[nearest].item()
-            excl_ttag_idx = np.where(ttag_sync_idx == excl_sync)[0][0]
-            lsr_shot_cntr = lsr_shot_cntr[0:nearest]
+                    nearest_max))
+            excl_sync_max = ds.sync_index[nearest_max].item()
+            excl_ttag_idx_max = np.where(ttag_sync_idx == excl_sync_max)[0][0]
+            max_lsr_num_idx = nearest_max
         else:
-            excl_ttag_idx = excl_ttag_idx[0]
-            lsr_shot_cntr = lsr_shot_cntr[0:max_lsr_num]
+            excl_ttag_idx_max = excl_ttag_idx_max[0]
+        if excl_ttag_idx_min.size == 0:
+            nearest_min = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync_min)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
+            excl_sync_min = ds.sync_index[nearest_min].item()
+            excl_ttag_idx_min = np.where(ttag_sync_idx == excl_sync_min)[0][0]
+            min_lsr_num_idx = nearest_min
+        else:
+            excl_ttag_idx_min = excl_ttag_idx_min[0]
 
-        flight_time = flight_time[0:excl_ttag_idx]
+        lsr_shot_cntr = lsr_shot_cntr[min_lsr_num_idx:max_lsr_num_idx]
+        flight_time = flight_time[excl_ttag_idx_min:excl_ttag_idx_max]
         n_shots = len(lsr_shot_cntr)
     else:
         n_shots = len(ds.sync_index)
