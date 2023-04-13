@@ -123,7 +123,7 @@ if __name__ == '__main__':
     dt_sim = 25e-12  # [s]
 
     tD = 25e-9  # [s] deadtime
-    Nshot = int(1e8)  # number of laser shots
+    Nshot = int(1e5)  # number of laser shots
     wrap_deadtime = True  # wrap deadtime between shots
     window_bnd = [26e-9, 34e-9]  # [s] time-of-flight bounds
     laser_pulse_width = 500e-12  # [s] laser pulse width

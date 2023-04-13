@@ -46,6 +46,8 @@ run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwi
 include_deadtime = True  # Set TRUE to include deadtime in noise model
 use_sim = False  # Set TRUE if using simulated data
 repeat_run = True  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
+repeat_range = np.arange(4, 6)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
+
 
 window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
 if use_sim:
@@ -59,22 +61,19 @@ rel_step_lim = 1e-8  # termination criteria based on step size
 max_epochs = 10000  # maximum number of iterations/epochs
 learning_rate = 1e-1  # ADAM learning rate
 term_persist = 20  # relative step size averaging interval in iterations
-# intgrl_N = 10000  # Set number of steps in numerical integration
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 7
-M_max = 8
+M_max = 22
 step = 1
 M_lst = np.arange(M_min, M_max, step)
 
-if repeat_run:
-    repeat_num = 2  # If 'repeat_run' is TRUE, this is the number of repetitions
-else:
-    repeat_num = 0
+if not repeat_run:
+    repeat_range = np.array([0])
 
 ### PATH VARIABLES ###
 load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset_Test'  # Where the data is loaded from
-save_dir = load_dir + r'/../../../evaluation_loss'  # Where the evaluation loss outputs will be saved
+save_dir = load_dir + r'\..\..\..\evaluation_loss'  # Where the evaluation loss outputs will be saved
 fname_ref = r'\OD50_Dev_0_-_2023-03-06_16.56.00_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
 # Generate list of ODs used in the file directory
@@ -111,18 +110,12 @@ save_csv_file_fit = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}_
                                                                                                      rho_list[max_idx] if use_sim else OD_list[max_idx],
                                                                                                      M_min, M_max-1,
                                                                                                      max_lsr_num_fit)
-save_dframe_fname = r'\fit_figures\params_eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}' \
+save_dframe_fname = r'\fit_figures\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}' \
                      '_ref_shots{:.2E}_lsr_shots{:.2E}_best_fit.pkl'.format(include_deadtime, 'Rho' if use_sim else 'OD',
                                                                             rho_list[min_idx] if use_sim else OD_list[min_idx],
                                                                             rho_list[max_idx] if use_sim else OD_list[max_idx],
                                                                             M_min, M_max-1, max_lsr_num_ref,
                                                                             max_lsr_num_fit)
-# save_plt_fname = r'\eval_loss_dtime{}_OD{}-{}_order{}-{}_ref_shots{:.2E}_lsr_shots{:.2E}.png'.format(include_deadtime,
-#                                                                                                      OD_list[start_idx],
-#                                                                                                      OD_list[stop_idx-1],
-#                                                                                                      M_min, M_max-1,
-#                                                                                                      max_lsr_num_ref,
-#                                                                                                      max_lsr_num_fit)
 
 ########################################################################################################################
 
@@ -152,7 +145,6 @@ else:
 
 # Fitting routine
 if run_full:
-    repeat_range = np.arange(1, repeat_num+2)
     for j in range(len(repeat_range)):
         val_final_loss_lst = []
         eval_final_loss_lst = []
@@ -231,19 +223,19 @@ if run_full:
             eval_final_loss_lst.append(eval_loss_arr[min_order])
             C_scale_final.append(C_scale_arr[min_order])
 
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-
-            bin_array = set_binwidth(t_min, t_max, dt)
-            n, bins = np.histogram(flight_time, bins=bin_array)
-            binwidth = np.diff(bins)[0]
-            N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
-            center = 0.5 * (bins[:-1] + bins[1:])
-            ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5)
-
             # Arrival rate fit
             fit_rate_seg = fit_rate_fine[min_order, :]
+
             if not repeat_run:
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+
+                bin_array = set_binwidth(t_min, t_max, dt)
+                n, bins = np.histogram(flight_time, bins=bin_array)
+                binwidth = np.diff(bins)[0]
+                N = n / binwidth / n_shots  # [Hz] Scaling counts to arrival rate
+                center = 0.5 * (bins[:-1] + bins[1:])
+                ax.bar(center, N, align='center', width=binwidth, color='b', alpha=0.5)
                 ax.plot(t_fine, fit_rate_seg, 'r--')
                 ax.set_title('Arrival Rate Fit: {}{:.2E}'.format('True Rho = ' if use_sim else 'OD = ', rho_list[k] if use_sim else +OD_list[k]))
                 ax.set_xlabel('time [s]')
@@ -266,9 +258,13 @@ if run_full:
             df_out = pd.concat([pd.DataFrame(OD_list), pd.DataFrame(eval_final_loss_lst), pd.DataFrame(C_scale_final),
                                 pd.DataFrame(percent_active_lst)], axis=1)
         if repeat_run:
-            save_csv_file_temp = save_csv_file[:-4] + '#{}.csv'.format(j)
-            save_csv_file_fit_temp = save_csv_file_fit[:-4] + '#{}.csv'.format(j)
-            save_dframe_fname_temp = save_dframe_fname[:-4] + '#{}.pkl'.format(j)
+            save_csv_file_temp = save_csv_file[:-4] + '_run#{}.csv'.format(repeat_range[j])
+            save_csv_file_fit_temp = save_csv_file_fit[:-4] + '_run#{}.csv'.format(repeat_range[j])
+            save_dframe_fname_temp = save_dframe_fname[:-4] + '_run#{}.pkl'.format(repeat_range[j])
+        else:
+            save_csv_file_temp = save_csv_file
+            save_csv_file_fit_temp = save_csv_file_fit
+            save_dframe_fname_temp = save_dframe_fname
 
         df_out = df_out.to_csv(save_dir + save_csv_file_temp, header=headers)
 
@@ -286,18 +282,18 @@ if run_full:
 
         print('Total run time: {} seconds'.format(time.time()-start))
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        if use_sim:
-            ax.semilogx(rho_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
-        else:
-            ax.plot(OD_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
-        ax.set_xlabel('{}'.format('Rho [Hz]' if use_sim else 'OD'))
-        ax.set_ylabel('Evaluation loss')
-        ax.set_title('Evaluation Loss vs OD')
-        # fig.savefig(save_dir + save_plt_fname)
-        time.sleep(2)
-        plt.show()
+        if not repeat_run:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            if use_sim:
+                ax.semilogx(rho_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
+            else:
+                ax.plot(OD_list[start_idx:stop_idx], eval_final_loss_lst, 'r.')
+            ax.set_xlabel('{}'.format('Rho [Hz]' if use_sim else 'OD'))
+            ax.set_ylabel('Evaluation loss')
+            ax.set_title('Evaluation Loss vs OD')
+            time.sleep(2)
+            plt.show()
 
 
 
