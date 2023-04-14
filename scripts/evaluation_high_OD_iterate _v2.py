@@ -38,15 +38,15 @@ c = 2.99792458e8  # [m/s] Speed of light
 ### PARAMETERS ###
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(6e6)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(5e3)  # Maximum number of laser shots for the fit dataset
+max_lsr_num_fit = int(1e3)  # Maximum number of laser shots for the fit dataset
 use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
 start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = True  # Set TRUE to include deadtime in noise model
+include_deadtime = False  # Set TRUE to include deadtime in noise model
 use_sim = False  # Set TRUE if using simulated data
 repeat_run = True  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
-repeat_range = np.arange(1, 10)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
+repeat_range = np.arange(1, 6)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
 
 
 window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
@@ -72,7 +72,7 @@ if not repeat_run:
     repeat_range = np.array([0])
 
 ### PATH VARIABLES ###
-load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset_Test'  # Where the data is loaded from
+load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset_Test'  # Where the data is loaded from
 save_dir = load_dir + r'\..\..\..\evaluation_loss'  # Where the evaluation loss outputs will be saved
 fname_ref = r'\OD50_Dev_0_-_2023-03-06_16.56.00_OD5.0.ARSENL.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
