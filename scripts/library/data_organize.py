@@ -44,7 +44,7 @@ def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, exclude_shots=Tr
         excl_ttag_idx_max = np.where(ttag_sync_idx == excl_sync_max)[0]
         excl_ttag_idx_min = np.where(ttag_sync_idx == excl_sync_min)[0]
         if excl_ttag_idx_max.size == 0:
-            nearest_max = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync_max)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
+            nearest_max = ttag_sync_idx[np.argmin(np.abs(ttag_sync_idx - excl_sync_max))] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
             print(
                 "Last sync event doesn't correspond to a detection event. Choosing nearest corresponding sync event (index: {})...".format(
                     nearest_max))
@@ -54,7 +54,7 @@ def data_organize(dt, data_dir, fname, window_bnd, max_lsr_num, exclude_shots=Tr
         else:
             excl_ttag_idx_max = excl_ttag_idx_max[0]
         if excl_ttag_idx_min.size == 0:
-            nearest_min = ttag_sync_idx[np.argmin(ttag_sync_idx - excl_sync_min)] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
+            nearest_min = ttag_sync_idx[np.argmin(np.abs(ttag_sync_idx - excl_sync_min))] - lsr_shot_cntr[0]  # Subtract first index value to start at 0
             excl_sync_min = ds.sync_index[nearest_min].item()
             excl_ttag_idx_min = np.where(ttag_sync_idx == excl_sync_min)[0][0]
             min_lsr_num_idx = nearest_min

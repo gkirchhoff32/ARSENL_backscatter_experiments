@@ -37,7 +37,7 @@ t_min = window_bnd[0]
 t_max = window_bnd[1]
 
 if load_netcdf:
-    data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated_Heatmap'
+    data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subset'
     fname = r'\sim_amp1.0E+06_nshot1.0E+07.nc'
 
     ds = xr.open_dataset(data_dir + fname)
