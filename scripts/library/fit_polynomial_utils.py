@@ -50,7 +50,7 @@ class Fit_Pulse(torch.nn.Module):
         t_poly_cheb = cheby_poly(t_norm, self.M)  # Generate chebyshev timestamp basis
         return t_poly_cheb
 
-    def forward(self, intgrl_N, active_ratio_hst, t, t_intgrl, cheby=True):
+    def forward(self, intgrl_N, active_ratio_hst, t, t_N, t_intgrl, cheby=True):
         """
         Forward model the profile for input time t of polynomial order M (e.g., x^2 --> M=2).
         Also return the integral.
@@ -67,6 +67,7 @@ class Fit_Pulse(torch.nn.Module):
 
         # orthonormalize by leveraging chebyshev polynomials, then calculate forward model
         if not cheby:
+            # t_fit_norm = fit_model.tstamp_condition(t_phot_fit_tnsr, t_min, t_max)
             t_poly_cheb = self.tstamp_condition(t, self.t_min, self.t_max)
         else:
             t_poly_cheb = t * 1
@@ -79,11 +80,13 @@ class Fit_Pulse(torch.nn.Module):
         fine_res_model = torch.exp(poly)
 
         # dt = (self.t_max - self.t_min) / intgrl_N  # Step size
-        _, dt = np.linspace(self.t_min, self.t_max, intgrl_N, endpoint=False, retstep=True)
+        t_fine, dt = np.linspace(self.t_min, self.t_max, intgrl_N, endpoint=False, retstep=True)
+        t_max_idx = np.argmin(np.abs(t_fine-t_N))
         # assert (len(fine_res_model) == len(active_ratio_hst))
         active_ratio_hst.resize_(fine_res_model.size())
         fine_res_model = fine_res_model * active_ratio_hst  # Generate deadtime noise model
-        integral_out = self.riemann(fine_res_model, dt)  # Numerically integrate
+        integral_out = self.riemann(fine_res_model[:t_max_idx], dt)  # Numerically integrate
+        # integral_out = self.riemann(fine_res_model, dt)
 
         return model_out, integral_out
 
@@ -257,10 +260,13 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
         t_fit_norm = fit_model.tstamp_condition(t_phot_fit_tnsr, t_min, t_max)
         t_val_norm = fit_model.tstamp_condition(t_phot_val_tnsr, t_min, t_max)
         t_eval_norm = fit_model.tstamp_condition(t_phot_eval_tnsr, t_min, t_max)
+        t_N_fit = np.max(t_phot_fit_tnsr.detach().numpy())
+        t_N_val = np.max(t_phot_val_tnsr.detach().numpy())
+        t_N_eval = np.max(t_phot_eval_tnsr.detach().numpy())
         t_intgrl = cheby_poly(torch.linspace(0, 1, intgrl_N), M)
         while rel_step > rel_step_lim and epoch < max_epochs:
             fit_model.train()
-            pred_fit, integral_fit = fit_model(intgrl_N, active_ratio_hst_fit, t_fit_norm, t_intgrl, cheby=True)
+            pred_fit, integral_fit = fit_model(intgrl_N, active_ratio_hst_fit, t_fit_norm, t_N_fit, t_intgrl, cheby=True)
             loss_fit = loss_fn(pred_fit, integral_fit * n_shots_fit)  # add regularization here
             fit_loss_lst += [loss_fit.item()]
 
@@ -281,20 +287,21 @@ def optimize_fit(M_max, M_lst, t_fine, t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_
 
             epoch += 1
 
-        pred_mod_seg, __ = fit_model(intgrl_N, active_ratio_hst_fit, torch.tensor(t_fine), t_intgrl, cheby=False)
+        t_fine_tensor = torch.tensor(t_fine)
+        pred_mod_seg, __ = fit_model(intgrl_N, active_ratio_hst_fit, t_fine_tensor, np.max(t_fine_tensor.detach().numpy()), t_intgrl, cheby=False)
         fit_rate_fine[M, :] = pred_mod_seg.detach().numpy().T
         coeffs[M, 0:M + 1] = fit_model.C.detach().numpy().T
 
         # Calculate validation loss
         # Using fit generated from fit set, calculate loss when applied to validation set
-        pred_val, integral_val = fit_model(intgrl_N, active_ratio_hst_val, t_val_norm, t_intgrl, cheby=True)
+        pred_val, integral_val = fit_model(intgrl_N, active_ratio_hst_val, t_val_norm, t_N_val, t_intgrl, cheby=True)
         loss_val = loss_fn(pred_val, integral_val * n_shots_val)
         val_loss_arr[M] = loss_val
 
         # Now use the generated fit and calculate loss against evaluation set (e.g., no deadtime, high-OD data)
         # When evaluating, I don't want to use the deadtime model as my evaluation metric. So I will use the Poisson loss function.
         # To accommodate, I will remove the active_ratio_hst_ref which is what incorporates the deadtime.
-        pred_eval, integral_eval = fit_model(intgrl_N, active_ratio_hst_ref, t_eval_norm, t_intgrl, cheby=True)
+        pred_eval, integral_eval = fit_model(intgrl_N, active_ratio_hst_ref, t_eval_norm, t_N_eval, t_intgrl, cheby=True)
 
         # If the number of shots between evaluation set and validation set differ, then arrival rate needs to be scaled accordingly.
         # Refer to Grant's notes for the derivation of this rescaling expression
