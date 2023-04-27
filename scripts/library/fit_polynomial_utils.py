@@ -58,6 +58,7 @@ class Fit_Pulse(torch.nn.Module):
         intgrl_N  (int): number of steps in numerical integration \\ []
         active_ratio_hst (torch array): Deadtime-adjusted array ("deadtime_adjust_vals output") \\ [Nx1]
         t (torch array): time stamps (unnormalized if cheby=False, cheby_poly output if cheby=True) \\ [Nx1]
+        t_N (float): maximum time stamp value \\ []
         t_intgrl (torch array): time vector [0,1] as chebyshev polynomial (i.e., cheby_poly output) \\ [intgrl_Nx1]
         cheby (bool): Set true if t is normalized (i.e., output from self.tstamp_condition)
         Returns:
@@ -73,6 +74,7 @@ class Fit_Pulse(torch.nn.Module):
             t_poly_cheb = t * 1
         poly = t_poly_cheb @ self.C
         model_out = torch.exp(poly)  # Forward model
+        plt.close()
 
         # calculate the integral
         t_poly_cheb = t_intgrl
@@ -85,8 +87,8 @@ class Fit_Pulse(torch.nn.Module):
         # assert (len(fine_res_model) == len(active_ratio_hst))
         active_ratio_hst.resize_(fine_res_model.size())
         fine_res_model = fine_res_model * active_ratio_hst  # Generate deadtime noise model
-        integral_out = self.riemann(fine_res_model[:t_max_idx], dt)  # Numerically integrate
-        # integral_out = self.riemann(fine_res_model, dt)
+        # integral_out = self.riemann(fine_res_model[:t_max_idx], dt)  # Numerically integrate
+        integral_out = self.riemann(fine_res_model, dt)
 
         return model_out, integral_out
 
