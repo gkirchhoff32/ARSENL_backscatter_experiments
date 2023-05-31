@@ -24,6 +24,7 @@ cwd = os.getcwd()
 dirLib = cwd + r'/library'
 if dirLib not in sys.path:
     sys.path.append(dirLib)
+from pathlib import Path
 
 import fit_polynomial_utils as fit
 import data_organize as dorg
@@ -39,9 +40,9 @@ c = 2.99792458e8  # [m/s] Speed of light
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(9.999e6)  # Maximum number of laser shots for the reference dataset
 max_lsr_num_fit = int(9.999e4)  # Maximum number of laser shots for the fit dataset
-use_final_idx = False  # Set TRUE if you want to use up to the OD value preceding the reference OD
-start_idx = 11  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
-stop_idx = 12  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
+use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
+start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
+stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
 include_deadtime = False  # Set TRUE to include deadtime in noise model
 use_sim = True  # Set TRUE if using simulated data
@@ -57,7 +58,7 @@ dt = 25e-12  # [s] TCSPC resolution
 
 # Optimization parameters
 # rel_step_lim = 1e-8  # termination criteria based on step size
-rel_step_lim = 1e-7  # termination criteria based on step size
+rel_step_lim = 1e-8  # termination criteria based on step size
 # max_epochs = 10000  # maximum number of iterations/epochs
 max_epochs = 10000  # maximum number of iterations/epochs
 learning_rate = 1e-1  # ADAM learning rate
@@ -66,7 +67,7 @@ term_persist = 20  # relative step size averaging interval in iterations
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 5
 # M_max = 22
-M_max = 24
+M_max = 22
 step = 1
 M_lst = np.arange(M_min, M_max, step)
 
@@ -74,7 +75,8 @@ if not repeat_run:
     repeat_range = np.array([1])
 
 ### PATH VARIABLES ###
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subset'  # Where the data is loaded from
+home = str(Path.home())
+load_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subset'  # Where the data is loaded from
 save_dir = load_dir + r'\..\..\..\evaluation_loss'  # Where the evaluation loss outputs will be saved
 fname_ref = r'\sim_amp1.0E+06_nshot1.0E+07.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
