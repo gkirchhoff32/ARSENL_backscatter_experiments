@@ -40,11 +40,11 @@ c = 2.99792458e8  # [m/s] Speed of light
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(9.999e6)  # Maximum number of laser shots for the reference dataset
 max_lsr_num_fit = int(9.999e4)  # Maximum number of laser shots for the fit dataset
-use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
+use_final_idx = False  # Set TRUE if you want to use up to the OD value preceding the reference OD
 start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = False  # Set TRUE to include deadtime in noise model
+include_deadtime = True  # Set TRUE to include deadtime in noise model
 use_sim = True  # Set TRUE if using simulated data
 repeat_run = False  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
 repeat_range = np.arange(1, 6)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
@@ -109,21 +109,21 @@ if run_full and use_final_idx:
         stop_idx = len(files) - 1
 
 # Save file name for important outputs (to csv and pickle object). These are used by scripts like "plot_eval_loss.ipynb"
-save_csv_file = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}.csv'.format(include_deadtime, 'Rho' if use_sim else 'OD',
+save_csv_file = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}_use_final_{}.csv'.format(include_deadtime, 'Rho' if use_sim else 'OD',
                                                                                         rho_list[min_idx] if use_sim else OD_list[min_idx],
                                                                                         rho_list[max_idx] if use_sim else OD_list[max_idx],
-                                                                                        M_min, M_max-1, max_lsr_num_fit)
-save_csv_file_fit = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}_best_fit.csv'.format(include_deadtime, 'Rho' if use_sim else 'OD',
+                                                                                        M_min, M_max-1, max_lsr_num_fit, use_final_idx)
+save_csv_file_fit = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}_use_final_{}_best_fit.csv'.format(include_deadtime, 'Rho' if use_sim else 'OD',
                                                                                                      rho_list[min_idx] if use_sim else OD_list[min_idx],
                                                                                                      rho_list[max_idx] if use_sim else OD_list[max_idx],
                                                                                                      M_min, M_max-1,
-                                                                                                     max_lsr_num_fit)
+                                                                                                     max_lsr_num_fit, use_final_idx)
 save_dframe_fname = r'\fit_figures\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}' \
-                     '_ref_shots{:.2E}_lsr_shots{:.2E}_best_fit.pkl'.format(include_deadtime, 'Rho' if use_sim else 'OD',
+                     '_ref_shots{:.2E}_lsr_shots{:.2E}_use_final_{}_best_fit.pkl'.format(include_deadtime, 'Rho' if use_sim else 'OD',
                                                                             rho_list[min_idx] if use_sim else OD_list[min_idx],
                                                                             rho_list[max_idx] if use_sim else OD_list[max_idx],
                                                                             M_min, M_max-1, max_lsr_num_ref,
-                                                                            max_lsr_num_fit)
+                                                                            max_lsr_num_fit, use_final_idx)
 
 ########################################################################################################################
 
