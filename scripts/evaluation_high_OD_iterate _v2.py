@@ -17,6 +17,7 @@ import sys
 import time
 import pandas as pd
 import pickle
+import xarray as xr
 
 start = time.time()
 
@@ -39,12 +40,12 @@ c = 2.99792458e8  # [m/s] Speed of light
 ### PARAMETERS ###
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(9.999e6)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(9.999e4)  # Maximum number of laser shots for the fit dataset
+max_lsr_num_fit = int(9.999e2)  # Maximum number of laser shots for the fit dataset
 use_final_idx = False  # Set TRUE if you want to use up to the OD value preceding the reference OD
 start_idx = 9  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
-stop_idx = 10  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
+stop_idx = 11  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = True  # Set TRUE to include deadtime in noise model
+include_deadtime = False  # Set TRUE to include deadtime in noise model
 use_sim = True  # Set TRUE if using simulated data
 repeat_run = False  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
 repeat_range = np.arange(1, 6)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
@@ -57,9 +58,7 @@ else:
 dt = 25e-12  # [s] TCSPC resolution
 
 # Optimization parameters
-# rel_step_lim = 1e-8  # termination criteria based on step size
 rel_step_lim = 1e-8  # termination criteria based on step size
-# max_epochs = 10000  # maximum number of iterations/epochs
 max_epochs = 10000  # maximum number of iterations/epochs
 learning_rate = 1e-1  # ADAM learning rate
 term_persist = 20  # relative step size averaging interval in iterations
@@ -67,7 +66,7 @@ term_persist = 20  # relative step size averaging interval in iterations
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 5
 # M_max = 22
-M_max = 22
+M_max = 7
 step = 1
 M_lst = np.arange(M_min, M_max, step)
 
@@ -161,10 +160,10 @@ if run_full:
         fit_rate_seg_lst = []
         flight_time_lst = []
         active_ratio_hst_lst = []
+        if use_sim:
+            true_rho_lst = []
 
         for k in np.arange(start_idx, stop_idx):
-            # if k == skip_idx:
-            #     continue
             fname = r'/' + files[k]
             # Obtain the OD value from the file name. Follow the README guide to ascertain the file naming convention
             flight_time, n_shots, t_det_lst = dorg.data_organize(dt, load_dir, fname, window_bnd, max_lsr_num_fit, exclude_shots, repeat_range[j])
@@ -174,6 +173,15 @@ if run_full:
                 print('\n{}:'.format(fname[1:5]))
             print('Number of detections: {}'.format(len(flight_time)))
             print('Number of laser shots: {}'.format(n_shots))
+
+            if use_sim:
+                ds = xr.open_dataset(load_dir + fname)
+                A = ds.target_amplitude.to_numpy()
+                sigma = ds.laser_pulse_width.to_numpy()
+                mu = ds.target_time.to_numpy()
+                bkg = ds.background.to_numpy()
+
+                true_rho_lst.append(A * np.exp(-1 * (t_fine - mu) ** 2 / 2 / sigma ** 2) + bkg)
 
             try:
                 t_phot_fit_tnsr, t_phot_val_tnsr, t_phot_eval_tnsr, \
@@ -257,6 +265,8 @@ if run_full:
             flight_time_lst.append(flight_time)
             active_ratio_hst_lst.append(active_ratio_hst_fit)
 
+
+
         # Save to csv file
         headers = ['{}'.format('Rho' if use_sim else 'OD'), 'Evaluation Loss', 'Optimal Scaling Factor', 'Average %-age where Detector was Active']
         if use_sim:
@@ -285,7 +295,10 @@ if run_full:
         df_out = pd.concat([pd.DataFrame(t_fine), df_out], axis=1)
         df_out = df_out.to_csv(save_dir + save_csv_file_fit_temp, header=headers)
 
-        dframe = [flight_time_lst, flight_time_ref, t_min, t_max, dt, n_shots, n_shots_ref, active_ratio_hst_lst]
+        if use_sim:
+            dframe = [flight_time_lst, flight_time_ref, t_min, t_max, dt, n_shots, n_shots_ref, active_ratio_hst_lst, true_rho_lst]
+        else:
+            dframe = [flight_time_lst, flight_time_ref, t_min, t_max, dt, n_shots, n_shots_ref, active_ratio_hst_lst]
         pickle.dump(dframe, open(save_dir+save_dframe_fname_temp, 'wb'))
 
         print('Total run time: {} seconds'.format(time.time()-start))

@@ -16,6 +16,7 @@ import time
 import pickle
 import matplotlib.pyplot as plt
 import xarray as xr
+from pathlib import Path
 
 from load_ARSENL_data import load_INPHAMIS_data, set_binwidth, data_dir, fname, picklename
 
@@ -37,7 +38,8 @@ t_min = window_bnd[0]
 t_max = window_bnd[1]
 
 if load_netcdf:
-    data_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset_Test'
+    home = str(Path.home())
+    data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset_Test'
     fname = r'\OD32_Dev_0_-_2023-03-06_13.20.53_OD3.2.ARSENL.nc'
 
     ds = xr.open_dataset(data_dir + fname)
@@ -93,7 +95,7 @@ if use_donovan:
     plt.legend()
 ax1.set_xlabel('Time of flight [s]')
 ax1.set_ylabel('Arrival rate [MHz]')
-ax1.set_title('Measured Profile of Wall using SPCM Detector')
+ax1.set_title('Wall Retrieval')
 plt.tight_layout()
 plt.show()
 
