@@ -40,7 +40,7 @@ c = 2.99792458e8  # [m/s] Speed of light
 ### PARAMETERS ###
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(9.999e6)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(9.999e6)  # Maximum number of laser shots for the fit dataset
+max_lsr_num_fit = int(9.999e5)  # Maximum number of laser shots for the fit dataset
 use_final_idx = False  # Set TRUE if you want to use up to the OD value preceding the reference OD
 start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
@@ -65,7 +65,7 @@ term_persist = 20  # relative step size averaging interval in iterations
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 7
-M_max = 22
+M_max = 20
 # M_max = 7
 step = 1
 M_lst = np.arange(M_min, M_max, step)
@@ -75,7 +75,7 @@ if not repeat_run:
 
 ### PATH VARIABLES ###
 home = str(Path.home())
-load_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subset'  # Where the data is loaded from
+load_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subsubsubset'  # Where the data is loaded from
 save_dir = load_dir + r'\..\..\..\evaluation_loss'  # Where the evaluation loss outputs will be saved
 fname_ref = r'\sim_amp1.0E+06_nshot1.0E+07.nc'  # The dataset that will serve as the high-fidelity reference when evaluating
 
