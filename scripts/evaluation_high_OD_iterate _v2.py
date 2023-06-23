@@ -39,13 +39,13 @@ c = 2.99792458e8  # [m/s] Speed of light
 # EDIT THESE PARAMETERS BEFORE RUNNING!
 ### PARAMETERS ###
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
-max_lsr_num_ref = int(5e7)  # Maximum number of laser shots for the reference dataset
-max_lsr_num_fit = int(1.0e3)  # Maximum number of laser shots for the fit dataset
-use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
-start_idx = 1  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
-stop_idx = 2  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
+max_lsr_num_ref = int(1.3e6)  # Maximum number of laser shots for the reference dataset
+max_lsr_num_fit = int(1.0e5)  # Maximum number of laser shots for the fit dataset
+use_final_idx = False  # Set TRUE if you want to use up to the OD value preceding the reference OD
+start_idx = 15  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
+stop_idx = 16  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
-include_deadtime = False  # Set TRUE to include deadtime in noise model
+include_deadtime = True  # Set TRUE to include deadtime in noise model
 use_sim = False  # Set TRUE if using simulated data
 repeat_run = False  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
 repeat_range = np.arange(1, 12)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
@@ -117,7 +117,7 @@ save_csv_file_fit = r'\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}_shots{:.2E}_
                                                                                                      rho_list[max_idx] if use_sim else OD_list[max_idx],
                                                                                                      M_min, M_max-1,
                                                                                                      max_lsr_num_fit, use_final_idx)
-save_dframe_fname = r'\fit_figures\eval_loss_dtime{}_{}{:.1E}-{:.1E}_order{}-{}' \
+save_dframe_fname = r'\fit_figures\eval_loss_dtime{}_{}{:.1f}-{:.1f}_order{}-{}' \
                      '_ref_shots{:.2E}_lsr_shots{:.2E}_use_final_{}_best_fit.pkl'.format(include_deadtime, 'Rho' if use_sim else 'OD',
                                                                             rho_list[min_idx] if use_sim else OD_list[min_idx],
                                                                             rho_list[max_idx] if use_sim else OD_list[max_idx],

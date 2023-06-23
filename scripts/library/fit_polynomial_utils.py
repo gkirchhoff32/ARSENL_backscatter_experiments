@@ -22,6 +22,8 @@ class Fit_Pulse(torch.nn.Module):
         super().__init__()
         self.M = M  # Polynomial order
         self.C = torch.nn.Parameter(-1 * torch.ones(M+1, 1, dtype=float))  # Coefficients to be optimized
+        self.B = torch.nn.Parameter(torch.ones(1, dtype=float))
+        # self.B = 0
         self.t_max = t_max  # Fit upper bound
         self.t_min = t_min  # Fit lower bound
 
@@ -73,13 +75,13 @@ class Fit_Pulse(torch.nn.Module):
         else:
             t_poly_cheb = t * 1
         poly = t_poly_cheb @ self.C
-        model_out = torch.exp(poly)  # Forward model
+        model_out = torch.exp(poly) + self.B  # Forward model
         plt.close()
 
         # calculate the integral
         t_poly_cheb = t_intgrl
         poly = t_poly_cheb @ self.C
-        fine_res_model = torch.exp(poly)
+        fine_res_model = torch.exp(poly) + self.B
 
         # dt = (self.t_max - self.t_min) / intgrl_N  # Step size
         t_fine, dt = np.linspace(self.t_min, self.t_max, intgrl_N, endpoint=False, retstep=True)
