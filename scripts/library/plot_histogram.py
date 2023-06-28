@@ -30,7 +30,7 @@ load_data = True  # Set TRUE to load data into a DataFrame and serialize into a 
 load_netcdf = True  # Set TRUE if loading from netcdf file ('*.ARSENL.nc'). Set FALSE if loading from *.ARSENL file.
 use_donovan = False  # Set TRUE if user wants to scale the histogram by using the Donovan correction
 
-window_bnd = [32e-9, 38e-9]  # [s] Set temporal boundaries for binning
+window_bnd = [28e-9, 34e-9]  # [s] Set temporal boundaries for binning
 dt = 25e-12  # [s] Resolution
 deadtime = 25e-9  # [s] Deadtime interval (25ns for sim, 29.1ns for SPCM)
 
@@ -39,8 +39,8 @@ t_max = window_bnd[1]
 
 if load_netcdf:
     home = str(Path.home())
-    data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\SPCM_Data_2023.03.06_Subset'
-    fname = r'\OD25_Dev_0_-_2023-03-06_12.53.30_OD2.5.ARSENL.nc'
+    data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subset'
+    fname = r'\sim_amp1.0E+08_nshot1.0E+06.nc'
 
     ds = xr.open_dataset(data_dir + fname)
 
