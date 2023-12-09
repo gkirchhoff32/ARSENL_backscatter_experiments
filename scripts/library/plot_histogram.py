@@ -28,7 +28,7 @@ c = 299792458  # [m/s] Speed of light
 create_csv = False  # Set TRUE to generate a .csv from .ARSENL data
 load_data = True  # Set TRUE to load data into a DataFrame and serialize into a pickle object
 load_netcdf = True  # Set TRUE if loading from netcdf file ('*.ARSENL.nc'). Set FALSE if loading from *.ARSENL file.
-use_donovan = False  # Set TRUE if user wants to scale the histogram by using the Donovan correction
+use_donovan = True  # Set TRUE if user wants to scale the histogram by using the Donovan correction
 
 window_bnd = [28e-9, 34e-9]  # [s] Set temporal boundaries for binning
 dt = 25e-12  # [s] Resolution
@@ -40,7 +40,7 @@ t_max = window_bnd[1]
 if load_netcdf:
     home = str(Path.home())
     data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subset'
-    fname = r'\sim_amp1.0E+08_nshot1.0E+06.nc'
+    fname = r'\sim_amp6.0E+08_nshot1.0E+06.nc'
 
     ds = xr.open_dataset(data_dir + fname)
 
@@ -92,10 +92,13 @@ center = 0.5 * (bins[:-1]+bins[1:])
 ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75, label='Detections')
 if use_donovan:
     ax1.bar(center, N_dono/1e6, align='center', width=binwidth, color='r', alpha=0.5, label='Donovan "Corrected"')
+    ax1.set_ylim([-500, 750])
+    ax1.set_xlim([2.9e-8, 3.3e-8])
+    ax1.set_title('Donovan Correction Demonstration')
     plt.legend()
 ax1.set_xlabel('Time of flight [s]')
 ax1.set_ylabel('Arrival rate [MHz]')
-ax1.set_title('Wall Retrieval')
+# ax1.set_title('Wall Retrieval')
 plt.tight_layout()
 plt.show()
 
