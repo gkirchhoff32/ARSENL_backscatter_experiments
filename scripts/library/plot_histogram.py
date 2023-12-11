@@ -91,10 +91,10 @@ if use_donovan:
 center = 0.5 * (bins[:-1]+bins[1:])
 ax1.bar(center, N/1e6, align='center', width=binwidth, color='b', alpha=0.75, label='Detections')
 if use_donovan:
-    ax1.bar(center, N_dono/1e6, align='center', width=binwidth, color='r', alpha=0.5, label='Donovan "Corrected"')
+    ax1.bar(center, N_dono/1e6, align='center', width=binwidth, color='r', alpha=0.5, label='Muller "Corrected" Profile')
     ax1.set_ylim([-500, 750])
     ax1.set_xlim([2.9e-8, 3.3e-8])
-    ax1.set_title('Donovan Correction Demonstration')
+    ax1.set_title('Inaccurate Muller Correction Demonstration')
     plt.legend()
 ax1.set_xlabel('Time of flight [s]')
 ax1.set_ylabel('Arrival rate [MHz]')
