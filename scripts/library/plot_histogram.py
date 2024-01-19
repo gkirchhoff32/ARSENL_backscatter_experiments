@@ -39,8 +39,8 @@ t_max = window_bnd[1]
 
 if load_netcdf:
     home = str(Path.home())
-    data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\Simulated\subset'
-    fname = r'\sim_amp6.0E+08_nshot1.0E+06.nc'
+    data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06'
+    fname = r'\OD30_Dev_0_-_2023-03-06_13.14.20_OD3.0.ARSENL.nc'
 
     ds = xr.open_dataset(data_dir + fname)
 
