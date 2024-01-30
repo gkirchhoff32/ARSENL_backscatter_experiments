@@ -81,6 +81,7 @@ def gen_sim_data(t_sim_max, dt_sim, tD, Nshot, wrap_deadtime, window_bnd, laser_
             if len(ctime) > 0:
                 t_det_last = ctime[-1]
             t_det_last -= t_sim_bins[-1]
+            print(t_det_last)
 
         ctime /= dt_sim  # convert from s to clock counts since sync event
         ptime /= dt_sim  # convert from s to clock counts since sync event
