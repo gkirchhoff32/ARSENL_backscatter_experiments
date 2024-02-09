@@ -22,9 +22,9 @@ from load_ARSENL_data import set_binwidth
 
 ### NOTE!!! Make sure to check filepaths for appropriate and MATCHING files for plotting.
 
-load_dir = r'C:\Users\Grant\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\evaluation_loss'
-load_file = r'\eval_loss_dtimeFalse_OD1.5E+00-3.4E+00_order7-21_shots5.00E+05_best_fit.csv'
-param_filename = r'\params_eval_loss_dtimeFalse_OD1.5E+00-3.4E+00_order7-21_ref_shots6.00E+06_lsr_shots5.00E+05_best_fit.pkl'
+load_dir = r'C:\Users\jason\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\evaluation_loss'
+load_file = r'\eval_loss_dtimeTrue_OD3.4E+00-3.4E+00_order7-19_shots2.50E+02_use_final_True_best_fit_run#1.csv'
+param_filename = r'\eval_loss_dtimeTrue_OD3.4-3.4_order7-19_ref_shots1.00E+07_lsr_shots2.50E+02_use_final_True_best_fit_run#1.pkl'
 
 df = pd.read_csv(load_dir + load_file)
 with open(load_dir+r'\fit_figures'+param_filename, 'rb') as f:
@@ -40,7 +40,7 @@ headers = list(df.columns.values)
 t_fine = df['time vector']
 fit_rate_seg_lst = df.loc[:, headers[2]:headers[-1]]
 
-num_OD = len(headers[2:-1])
+num_OD = len(headers[2:])
 
 for i in range(num_OD):
     header = headers[2+i]
