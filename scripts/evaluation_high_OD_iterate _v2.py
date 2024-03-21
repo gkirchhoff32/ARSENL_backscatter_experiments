@@ -48,7 +48,7 @@ stop_idx = 6  # If 'use_final_idx' FALSE, set the max+1 idx value to this value 
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
 include_deadtime = False  # Set TRUE to include deadtime in noise model
 use_sim = False  # Set TRUE if using simulated data
-repeat_run = True  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
+repeat_run = False  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
 repeat_range = np.arange(1, 13)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
 
 window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers

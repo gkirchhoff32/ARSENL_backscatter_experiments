@@ -79,8 +79,7 @@ class Fit_Pulse(torch.nn.Module):
         plt.close()
 
         # calculate the integral
-        t_poly_cheb = t_intgrl
-        poly = t_poly_cheb @ self.C
+        poly = t_intgrl @ self.C
         fine_res_model = torch.exp(poly) + self.B
 
         # dt = (self.t_max - self.t_min) / intgrl_N  # Step size
