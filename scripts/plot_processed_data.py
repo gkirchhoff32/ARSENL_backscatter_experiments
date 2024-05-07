@@ -1,7 +1,7 @@
 # plot_processed_data.py
 #
 # Grant Kirchhoff
-# Last Updated: 12/19/2022
+
 """
 After processing data from 'evaluation_high_OD_iterate.py', plot post-processed data.
 """

@@ -3,7 +3,6 @@
 # plot_histogram.py
 #
 # Grant Kirchhoff
-# 02-25-2022
 # University of Colorado Boulder
 #
 """
