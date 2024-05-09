@@ -27,7 +27,7 @@ c = 299792458  # [m/s] Speed of light
 create_csv = False  # Set TRUE to generate a .csv from .ARSENL data
 load_data = True  # Set TRUE to load data into a DataFrame and serialize into a pickle object
 load_netcdf = True  # Set TRUE if loading from netcdf file ('*.ARSENL.nc'). Set FALSE if loading from *.ARSENL file.
-use_donovan = False  # Set TRUE if user wants to scale the histogram by using the Donovan correction
+use_donovan = True  # Set TRUE if user wants to scale the histogram by using the Donovan correction
 
 window_bnd = [32e-9, 38e-9]  # [s] Set temporal boundaries for binning
 dt = 25e-12  # [s] Resolution
@@ -38,7 +38,7 @@ t_max = window_bnd[1]
 
 if load_netcdf:
     home = str(Path.home())
-    data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06\test'
+    data_dir = home + r'\OneDrive - UCB-O365\ARSENL\Experiments\SPCM\Data\SPCM_Data_2023.03.06'
     fname = r'\OD26_Dev_0_-_2023-03-06_12.56.50_OD2.6.ARSENL.nc'
 
     ds = xr.open_dataset(data_dir + fname)
