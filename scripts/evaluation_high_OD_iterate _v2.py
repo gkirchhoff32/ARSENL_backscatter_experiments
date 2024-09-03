@@ -41,17 +41,18 @@ c = 2.99792458e8  # [m/s] Speed of light
 exclude_shots = True  # Set TRUE to exclude data to work with smaller dataset (enables 'max_lsr_num_fit_ref' variables)
 max_lsr_num_ref = int(9.999e6)  # Maximum number of laser shots for the reference dataset
 # max_lsr_num_fit = int(9.999e5)  # Maximum number of laser shots for the fit dataset
-max_lsr_num_fit = int(2.25e3)
+max_lsr_num_fit = int(1e1)
 use_final_idx = True  # Set TRUE if you want to use up to the OD value preceding the reference OD
 start_idx = 5  # If 'use_final_idx' FALSE, set the min idx value to this value (for troubleshooting purposes)
 stop_idx = 6  # If 'use_final_idx' FALSE, set the max+1 idx value to this value (for troubleshooting purposes)
 run_full = True  # Set TRUE if you want to run the fits against all ODs. Otherwise, it will just load the reference data
 include_deadtime = False  # Set TRUE to include deadtime in noise model
-use_sim = False  # Set TRUE if using simulated data
+use_sim = True  # Set TRUE if using simulated data
 repeat_run = False  # Set TRUE if repeating processing with same parameters but with different data subsets (e.g., fit number is 1e3 and processing first 1e3 dataset, then next 1e3 dataset, etc.)
 repeat_range = np.arange(1, 13)  # If 'repeat_run' is TRUE, these are the indices of the repeat segments (e.g., 'np.arange(1,3)' and 'max_lsr_num_fit=1e2' --> run on 1st-set of 100, then 2nd-set of 100 shots.
+use_ref = False  # Set TRUE if using reference dataset to generate evaluation loss value
 
-window_bnd = [32e-9, 38e-9]  # [s] Set boundaries for binning to exclude outliers
+window_bnd = [28e-7, 34e-7]  # [s] Set boundaries for binning to exclude outliers
 if use_sim:
     deadtime = 25e-9  # [s] simulated deadtime
 else:
@@ -66,7 +67,7 @@ term_persist = 20  # relative step size averaging interval in iterations
 
 # Polynomial orders (min and max) to be iterated over in specified step size in the optimizer
 M_min = 7
-M_max = 20
+M_max = 8
 # M_max = 7
 step = 1
 M_lst = np.arange(M_min, M_max, step)

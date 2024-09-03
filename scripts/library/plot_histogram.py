@@ -31,8 +31,9 @@ create_csv = False  # Set TRUE to generate a .csv from .ARSENL data
 load_data = True  # Set TRUE to load data into a DataFrame and serialize into a pickle object
 load_netcdf = True  # Set TRUE if loading from netcdf file ('*.ARSENL.nc'). Set FALSE if loading from *.ARSENL file.
 use_donovan = False  # Set TRUE if user wants to scale the histogram by using the Donovan correction
-limit_shots = False
-native_window = True
+limit_shots = False  # Set TRUE to limit the number of shots used, which activates variable "use_shots"
+native_window = True  # Set TRUE if use the window predefined in the simulation
+bin_avg = 1  # set number of bins to integrate together during plotting
 
 # window_bnd = np.array([28e-9, 34e-9])  # [s] Set temporal boundaries for binning
 new_window_bnd = np.array([28e-8, 34e-8])  # [s] Set temporal boundaries for binning
@@ -53,8 +54,8 @@ if load_netcdf:
         home = r'/mnt/c/Users/Grant'
     else:
         raise OSError('Check operating system is Windows or Linux')
-    data_dir = os.path.join(home, 'OneDrive - UCB-O365', 'ARSENL', 'Experiments', 'SPCM', 'Data', 'Simulated', 'manuscript_revise_distributed')
-    fname = 'sim_amp1.2E+09_nshot1.0E+05_width5.0E-10_dt2.5E-11.nc'
+    data_dir = os.path.join(home, 'OneDrive - UCB-O365', 'ARSENL', 'Experiments', 'SPCM', 'Data', 'Simulated', 'manuscript_revise_distributed', 'ver1')
+    fname = 'sim_amp1.0E+08_nshot1.0E+06_width2.5E-09_dt1.3E-10.nc'
     save_fname = 'histogram.jpg'
 
     ds = xr.open_dataset(os.path.join(data_dir, fname))
@@ -109,7 +110,6 @@ else:
 ### Histogram of time of flight ###
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
-bin_avg = 1
 res = dt * bin_avg
 bin_array = set_binwidth(t_min, t_max, res)
 n, bins = np.histogram(flight_time, bins=bin_array)
@@ -120,7 +120,7 @@ print('Number of shots: {}'.format(n_shots))
 if use_donovan:
     N_dono = N / (1 - N*deadtime)
 center = 0.5 * (bins[:-1]+bins[1:])
-ax1.bar(center, N, align='center', width=binwidth, color='b', alpha=0.75, label='Detections')
+ax1.bar(center*1e9, N/1e6, align='center', width=binwidth*1e9, color='b', alpha=0.75, label='Detections')
 # ax1.barh(center*c/2/1e3, N/1e6, align='center', height=binwidth*c/2/1e3, color='b', alpha=0.75)
 if use_donovan:
     ax1.bar(center*c/2, N_dono, align='center', width=binwidth*c/2, color='r', alpha=0.5, label='Muller "Corrected" Profile')
@@ -133,7 +133,7 @@ if use_donovan:
 ax1.set_xlabel('Time of flight [ns]')
 ax1.set_ylabel('Arrival rate [MHz]')
 # ax1.set_yscale('log')
-ax1.set_xlim(window_bnd)
+ax1.set_xlim(window_bnd*1e9)
 plt.tight_layout()
 if sys.platform == 'win32':
     plt.show()
