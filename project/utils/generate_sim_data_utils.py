@@ -19,7 +19,7 @@ if dirLib not in sys.path:
     sys.path.append(dirLib)
 
 import sim_deadtime_utils as sim
-from load_ARSENL_data import set_binwidth
+from load_ARSENL_data_utils import set_binwidth
 
 
 def gen_rho(A, x, mu, sig, bg):

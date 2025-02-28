@@ -21,6 +21,7 @@ import pandas as pd
 import xarray as xr
 import time
 import pickle
+import yaml
 
 # Path settings
 # NOTE: User should check these settings when running "load_ARSENL_data.py" or "plot_histogram.py"
@@ -30,6 +31,10 @@ fname = r'\Dev_0_-_2023-02-06_17.51.44_OD3.8.ARSENL'
 picklename = 'pickle.dat'
 create_csv = False
 
+def load_config(file_path):
+    with open(file_path, "r") as file:
+        config = yaml.safe_load(file)
+    return config
 
 def load_INPHAMIS_data(data_dir, fname, picklename, create_csv):
     """
