@@ -1,0 +1,16 @@
+params:
+  tD: 25e-9  # [s] deadtime
+  Nshot: 1  # number of laser shots
+  wrap_deadtime: True  # wrap deadtime between shots
+  window_start: 28e-9  # [s] time-of-flight bounds
+  window_end: 34e-9
+  laser_pulse_width: 5e-10  # [s] laser pulse width (sigma) 
+  target_time: 31.2e-9  # [s] target location in time
+  background: 1e1  # [Hz] background count rate (dark count)
+
+  amplitude: 1e4  # [Hz]
+
+  # simulation resolution settings
+  t_sim_min: 0  # [s]
+  t_sim_max: 40e-9  # [s]
+  dt_sim: 25e-12  # [s]
