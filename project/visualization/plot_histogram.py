@@ -126,7 +126,7 @@ else:
 
 ### Histogram of time of flight ###
 fig = plt.figure(
-    figsize=(10,4),
+    figsize=(2.75, 5),
     dpi=400
 )
 ax1 = fig.add_subplot(111)
@@ -141,7 +141,8 @@ if use_donovan:
     N_dono = N / (1 - N*deadtime)
 center = 0.5 * (bins[:-1]+bins[1:])
 # ax1.bar(center*1e9, N/1e6, align='center', width=binwidth*1e9, color='b', alpha=0.75, label='Detections')
-ax1.bar(center*1e9, n, align='center', width=binwidth*1e9, color='b', alpha=0.75, label='Detections')
+# ax1.bar(center*1e9, n, align='center', width=binwidth*1e9, color='b', alpha=0.75, label='Detections')
+ax1.barh(center*c/2, n, align='center', height=binwidth*c/2, color='b', alpha=0.75, label='Detections')
 # ax1.barh(center*c/2/1e3, N/1e6, align='center', height=binwidth*c/2/1e3, color='b', alpha=0.75)
 if use_donovan:
     ax1.bar(center*c/2, N_dono, align='center', width=binwidth*c/2, color='r', alpha=0.5, label='Muller "Corrected" Profile')
@@ -151,12 +152,18 @@ if use_donovan:
 # ax1.set_xlabel('Arrival rate [MHz]')
 # ax1.set_xscale('log')
 # ax1.set_ylim(window_bnd*c/2/1e3)
-ax1.set_xlabel('Time of flight [ns]')
+ax1.set_ylabel('Range [m]')
 # ax1.set_ylabel('Arrival rate [MHz]')
-ax1.set_ylabel('Counts')
+ax1.set_xlabel('Counts')
 ax1.set_title('IRF Measurement')
 # ax1.set_yscale('log')
-ax1.set_xlim(window_bnd*1e9)
+# ax1.set_ylim(window_bnd*1e9)
+cval = 34.5e-9
+dshift = 0.85
+bnd = np.array([cval - dshift/c*2, cval + (2-dshift)/c*2])
+ax1.set_ylim(bnd*c/2)
+# ax1.set_xlim(0, 2000)
+ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
 plt.tight_layout()
 if sys.platform == 'win32':
     plt.show()
